@@ -65,7 +65,7 @@ rules:
   docs-supported-devices: done
   docs-supported-functions: done
   docs-troubleshooting: todo
-  docs-use-cases: todo
+  docs-use-cases: done
   dynamic-devices:
     status: exempt
     comment: |

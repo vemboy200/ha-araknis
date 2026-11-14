@@ -24,6 +24,13 @@ One device per router, with:
 
 Switches and routers are polled every 30 seconds.
 
+## Use cases
+
+- **Power monitoring:** see how much power each PoE device draws (access points, cameras, PoE-powered shades and so on) and how much of the switch's PoE budget is in use. The power sensors can feed an [Integral helper](https://www.home-assistant.io/integrations/integration/) to track energy over time, or alert you when a device suddenly draws nothing because it has crashed or been unplugged.
+- **Cutting power to devices:** turn PoE off for devices you don't need all the time, for example indoor cameras while people are home, or a lab device overnight. Power cycle a frozen camera or access point from Home Assistant instead of walking to the rack, or automatically when it drops off the network.
+- **WAN monitoring:** get notified when your internet connection drops (the WAN port loses its link or IP address) and when it comes back, or when the link speed falls below what it should be. With two WAN ports, see which one is up.
+- **Router health:** watch the router's CPU and memory use over time, and spot unexpected restarts with the **Last restart** sensor. The **DHCP clients** count shows when the number of devices on your network changes, which can also warn you before the DHCP pool runs out.
+
 ## Installation
 
 Requires Home Assistant 2026.11 or newer.
