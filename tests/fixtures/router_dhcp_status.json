@@ -1,0 +1,20 @@
+{
+  "DHCP": [
+    {
+      "vlan_id": "1",
+      "name": "default",
+      "subnet_ip": "192.168.1.1",
+      "subnet_mask": "255.255.255.0",
+      "dhcp_mode": "server",
+      "ip_range_min": "192.168.1.100",
+      "ip_range_max": "192.168.1.199",
+      "relay_server": "192.168.1.100",
+      "lease_time": "720",
+      "dns_server_mode": "static",
+      "dns_1": "8.8.8.8",
+      "dns_2": "1.1.1.1",
+      "clients": []
+    }
+  ],
+  "static_clients": []
+}

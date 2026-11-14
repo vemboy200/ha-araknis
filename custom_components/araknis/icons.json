@@ -24,6 +24,9 @@
       "dhcp_clients": {
         "default": "mdi:devices"
       },
+      "dhcp_pool_size": {
+        "default": "mdi:ip-network"
+      },
       "ip_address": {
         "default": "mdi:ip-network"
       },
@@ -38,6 +41,12 @@
       },
       "poe_status": {
         "default": "mdi:power-plug-outline"
+      },
+      "static_clients": {
+        "default": "mdi:ip-network-outline"
+      },
+      "total_clients": {
+        "default": "mdi:devices"
       }
     },
     "switch": {

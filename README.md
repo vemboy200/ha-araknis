@@ -20,6 +20,8 @@ One device per switch, with:
 One device per router, with:
 
 - **CPU usage**, **memory usage**, **DHCP clients** and **last restart**
+- **Static IP clients** (devices with an address set on the device rather than by DHCP) and **Total clients** (both kinds). These count every client the router knows of, including ones that have left but whose DHCP lease hasn't run out yet, so they're not a count of devices connected right now.
+- **DHCP pool size** as a diagnostic sensor: how many addresses the DHCP ranges hold, reservations included. It's read when the integration starts, so reload it after changing the range.
 - **Cloud connection** (OvrC) as a diagnostic sensor
 - A **Restart** button
 - One child device per WAN port, with a **connected** sensor, **link speed** and the WAN **IP address** (disabled by default)
@@ -76,7 +78,7 @@ The switches and routers can't be flashed. If you use SNMP on them, change their
 - **Power monitoring:** see how much power each PoE device draws (access points, cameras, PoE-powered shades and so on) and how much of the switch's PoE budget is in use. The power sensors can feed an [Integral helper](https://www.home-assistant.io/integrations/integration/) to track energy over time, or alert you when a device suddenly draws nothing because it has crashed or been unplugged.
 - **Cutting power to devices:** turn PoE off for devices you don't need all the time, for example indoor cameras while people are home, or a lab device overnight. Power cycle a frozen camera or access point from Home Assistant instead of walking to the rack, or automatically when it drops off the network.
 - **WAN monitoring:** get notified when your internet connection drops (the WAN port loses its link or IP address) and when it comes back, or when the link speed falls below what it should be. With two WAN ports, see which one is up.
-- **Router health:** watch the router's CPU and memory use over time, and spot unexpected restarts with the **Last restart** sensor. The **DHCP clients** count shows when the number of devices on your network changes, which can also warn you before the DHCP pool runs out.
+- **Router health:** watch the router's CPU and memory use over time, and spot unexpected restarts with the **Last restart** sensor. The **DHCP clients** count shows when the number of devices on your network changes, which can also warn you before the DHCP pool runs out: compare it with **DHCP pool size**.
 
 ## Installation
 

@@ -72,6 +72,9 @@
       "dhcp_clients": {
         "name": "DHCP clients"
       },
+      "dhcp_pool_size": {
+        "name": "DHCP pool size"
+      },
       "ip_address": {
         "name": "IP address"
       },
@@ -112,6 +115,12 @@
       },
       "port_voltage": {
         "name": "PoE voltage"
+      },
+      "static_clients": {
+        "name": "Static IP clients"
+      },
+      "total_clients": {
+        "name": "Total clients"
       }
     },
     "switch": {

@@ -86,6 +86,10 @@ async def test_router_entities(hass: HomeAssistant) -> None:
     # (499 - 387) / 499
     assert state_of(hass, "sensor", "memory_usage") == "22.4"
     assert state_of(hass, "sensor", "dhcp_clients") == "73"
+    assert state_of(hass, "sensor", "static_clients") == "15"
+    assert state_of(hass, "sensor", "total_clients") == "88"
+    # .100 to .199
+    assert state_of(hass, "sensor", "dhcp_pool_size") == "100"
     assert state_of(hass, "binary_sensor", "cloud_connection") == STATE_ON
     assert state_of(hass, "sensor", "last_restart") != STATE_UNKNOWN
 
@@ -152,8 +156,9 @@ async def test_session_expired_logs_in_again(
 
     aioclient_mock.post(router_cgi("login"), json=router_login_reply)
     aioclient_mock.get(router_cgi("stat"), side_effect=stat)
-    for name in ("system_status", "wan_status_cards", "client_count"):
-        aioclient_mock.get(router_cgi(name), json=router_data[name])
+    for name, reply in router_data.items():
+        if name != "stat":
+            aioclient_mock.get(router_cgi(name), json=reply)
     router_config_entry.add_to_hass(hass)
     await hass.config_entries.async_setup(router_config_entry.entry_id)
     assert router_config_entry.state is ConfigEntryState.LOADED

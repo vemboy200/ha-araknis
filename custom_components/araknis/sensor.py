@@ -171,6 +171,18 @@ ROUTER_SENSORS: tuple[AraknisRouterSensorDescription, ...] = (
         state_class=SensorStateClass.MEASUREMENT,
         value_fn=lambda data: data.dhcp_clients,
     ),
+    AraknisRouterSensorDescription(
+        key="static_clients",
+        translation_key="static_clients",
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda data: data.static_clients,
+    ),
+    AraknisRouterSensorDescription(
+        key="total_clients",
+        translation_key="total_clients",
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda data: data.total_clients,
+    ),
 )
 
 WAN_SENSORS: tuple[AraknisWanSensorDescription, ...] = (
@@ -208,6 +220,7 @@ async def async_setup_entry(
             AraknisRouterSensor(coordinator, description)
             for description in ROUTER_SENSORS
         )
+        entities.append(AraknisDhcpPoolSizeSensor(coordinator))
         entities.extend(
             AraknisWanSensor(coordinator, interface, description)
             for interface in coordinator.data.wans
@@ -266,6 +279,18 @@ class AraknisRouterSensor(AraknisEntity[AraknisRouterCoordinator], SensorEntity)
     def native_value(self) -> float | int | None:
         """Return the sensor value."""
         return self.entity_description.value_fn(self.coordinator.data)
+
+
+class AraknisDhcpPoolSizeSensor(AraknisEntity[AraknisRouterCoordinator], SensorEntity):
+    """How many addresses the router's DHCP ranges hold, read at setup."""
+
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_translation_key = "dhcp_pool_size"
+
+    def __init__(self, coordinator: AraknisRouterCoordinator) -> None:
+        """Initialize the sensor."""
+        super().__init__(coordinator, "dhcp_pool_size")
+        self._attr_native_value = coordinator.info.dhcp_pool_size
 
 
 class AraknisBootTimeSensor(AraknisEntity[AnyAraknisCoordinator], SensorEntity):

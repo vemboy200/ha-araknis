@@ -28,6 +28,7 @@ import asyncio
 import base64
 import contextlib
 from dataclasses import dataclass
+import ipaddress
 import json
 import re
 import time
@@ -442,6 +443,10 @@ class RouterData:
     """Connected to the OvrC cloud service."""
     dhcp_clients: int
     """DHCP leases in use."""
+    static_clients: int
+    """Clients with an address set on the device itself rather than by DHCP."""
+    total_clients: int
+    """Every client the router knows of, DHCP and static, including ones that left."""
     wans: dict[str, RouterWan]
 
 
@@ -456,6 +461,18 @@ class RouterInfo:
     serial_number: str
     """The service tag."""
     name: str
+    dhcp_pool_size: int
+    """Addresses in the DHCP ranges of all VLANs, reservations included."""
+
+
+def _dhcp_pool_size(dhcp_status: dict[str, Any]) -> int:
+    """Add up the size of each VLAN's DHCP range."""
+    return sum(
+        int(ipaddress.ip_address(vlan["ip_range_max"]))
+        - int(ipaddress.ip_address(vlan["ip_range_min"]))
+        + 1
+        for vlan in dhcp_status["DHCP"]
+    )
 
 
 def _wan_speed(text: str) -> int | None:
@@ -627,6 +644,8 @@ class AraknisRouterClient:
     async def get_info(self) -> RouterInfo:
         """Read the model, firmware, service tag and name."""
         status = await self._get("system_status")
+        # A big reply that lists every client, so it's read only here.
+        dhcp_status = await self._get("dhcp_status")
         try:
             return RouterInfo(
                 mac=status["LanMAC"],
@@ -634,8 +653,9 @@ class AraknisRouterClient:
                 firmware=status["firmware"],
                 serial_number=status["service_tag"],
                 name=status.get("name") or status["model"],
+                dhcp_pool_size=_dhcp_pool_size(dhcp_status),
             )
-        except (KeyError, TypeError) as err:
+        except (KeyError, TypeError, ValueError) as err:
             raise AraknisConnectionError(
                 f"Router sent its details in an unexpected format: {err!r}"
             ) from err
@@ -660,6 +680,8 @@ class AraknisRouterClient:
                 uptime=int(stat["uptime"]),
                 cloud_connected=str(stat["cloudConnected"]) == "1",
                 dhcp_clients=int(clients["DHCP"]["used"]),
+                static_clients=int(clients["static"]),
+                total_clients=int(clients["DHCP"]["client_table_count"]),
                 wans={wan.interface: wan for wan in wans},
             )
         except (KeyError, TypeError, ValueError, ZeroDivisionError) as err:

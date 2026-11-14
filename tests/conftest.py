@@ -183,7 +183,13 @@ def router_data() -> dict[str, dict[str, Any]]:
     """Replies for the router's read CGIs, from a real AN-310-RT-4L2W (sanitized)."""
     return {
         name: load_json_object_fixture(f"router_{name}.json", DOMAIN)
-        for name in ("stat", "system_status", "wan_status_cards", "client_count")
+        for name in (
+            "stat",
+            "system_status",
+            "wan_status_cards",
+            "client_count",
+            "dhcp_status",
+        )
     }
 
 
