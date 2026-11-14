@@ -33,7 +33,7 @@ from .api import (
     WebSmartInfo,
     async_detect_device_type,
 )
-from .const import CONF_DEVICE_TYPE, DOMAIN
+from .const import CONF_DEVICE_TYPE, DEFAULT_USERNAME, DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -115,7 +115,9 @@ class AraknisConfigFlow(ConfigFlow, domain=DOMAIN):
                 )
         return self.async_show_form(
             step_id="user",
-            data_schema=self.add_suggested_values_to_schema(USER_SCHEMA, user_input),
+            data_schema=self.add_suggested_values_to_schema(
+                USER_SCHEMA, user_input or {CONF_USERNAME: DEFAULT_USERNAME}
+            ),
             errors=errors,
         )
 
@@ -174,7 +176,9 @@ class AraknisConfigFlow(ConfigFlow, domain=DOMAIN):
                 )
         return self.async_show_form(
             step_id="discovery_confirm",
-            data_schema=self.add_suggested_values_to_schema(LOGIN_SCHEMA, user_input),
+            data_schema=self.add_suggested_values_to_schema(
+                LOGIN_SCHEMA, user_input or {CONF_USERNAME: DEFAULT_USERNAME}
+            ),
             description_placeholders={"host": self._host},
             errors=errors,
         )

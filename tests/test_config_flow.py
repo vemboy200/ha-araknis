@@ -36,6 +36,14 @@ from .conftest import (
 pytestmark = pytest.mark.usefixtures("mock_setup_entry")
 
 
+def suggested_username(result: Any) -> str | None:
+    """Return the username the form starts with."""
+    for key in result["data_schema"].schema:
+        if key == CONF_USERNAME:
+            return (key.description or {}).get("suggested_value")
+    return None
+
+
 async def test_user_flow(hass: HomeAssistant, mock_switch: AiohttpClientMocker) -> None:
     """Test setting up a switch."""
     result = await hass.config_entries.flow.async_init(
@@ -43,6 +51,7 @@ async def test_user_flow(hass: HomeAssistant, mock_switch: AiohttpClientMocker) 
     )
     assert result["type"] is FlowResultType.FORM
     assert result["errors"] == {}
+    assert suggested_username(result) == "araknis"
 
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"], USER_INPUT
@@ -219,6 +228,7 @@ async def test_ssdp_discovery(
     )
     assert result["type"] is FlowResultType.FORM
     assert result["step_id"] == "discovery_confirm"
+    assert suggested_username(result) == "araknis"
     assert result["description_placeholders"] == {"host": HOST}
 
     result = await hass.config_entries.flow.async_configure(

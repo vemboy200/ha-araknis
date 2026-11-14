@@ -7,3 +7,6 @@ MANUFACTURER = "Araknis Networks"
 SCAN_INTERVAL = timedelta(seconds=30)
 
 CONF_DEVICE_TYPE = "device_type"
+
+# The factory username on every Araknis switch and router seen so far.
+DEFAULT_USERNAME = "araknis"

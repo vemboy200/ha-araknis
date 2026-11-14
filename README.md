@@ -96,7 +96,7 @@ Copy `custom_components/araknis` into your Home Assistant `config/custom_compone
 
 ## Setup
 
-Home Assistant finds PoE switches (over SSDP) and routers (over mDNS) on its own and offers to add them: you only enter the login. Web-smart switches aren't found automatically. Otherwise, add the integration from **Settings → Devices & services** and enter the device's IP address and the username and password for its web interface. The integration works out whether it's a switch, a web-smart switch or a router. Add each device separately. A static IP or DHCP reservation for each switch is recommended.
+Home Assistant finds PoE switches (over SSDP) and routers (over mDNS) on its own and offers to add them: you only enter the login. Web-smart switches aren't found automatically. Otherwise, add the integration from **Settings → Devices & services** and enter the device's IP address and the username and password for its web interface. The username starts filled in as `araknis`, the factory default. The integration works out whether it's a switch, a web-smart switch or a router. Add each device separately. A static IP or DHCP reservation for each switch is recommended.
 
 ## Removal
 
