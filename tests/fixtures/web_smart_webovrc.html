@@ -1,0 +1,39 @@
+<html>
+<head>
+<title>"WEB_TITLE"</title>
+<link rel="stylesheet" type="text/css" href="/style.css">
+<style>
+  table{
+      border: 0px solid black;
+  }
+</style>
+<script type="text/javascript">
+function ConfirmBox(s) {
+    if (confirm('Change OvrC State Configuration, continue?')) {
+        return true;
+    } else {
+        return false;
+    }
+}
+</script>
+</head>
+<body>
+<center>
+
+<fieldset>
+<legend align="center">OvrC State Configuration</legend>
+<form method="post" action="webovrc.cgi" onSubmit="return ConfirmBox(this.form)">
+<table style="font-size: 100%;">
+<tr >
+    <td><font face="Arial"><input  type="radio" name="ovrc_state" value="1" checked = true> Enable</font></td>
+    <td><font face="Arial"><input  type="radio" name="ovrc_state" value="0" > Disable</font></td>
+</tr>
+</table>
+  <br>
+  <input type="submit" value="Save & Apply">
+  <input type="hidden" name="cmd" value="OvrC Setting">
+</form>
+</fieldset>
+</center>
+</body>
+</html>

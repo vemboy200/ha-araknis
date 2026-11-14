@@ -41,6 +41,12 @@
       }
     },
     "switch": {
+      "cloud_service": {
+        "default": "mdi:cloud-outline",
+        "state": {
+          "off": "mdi:cloud-off-outline"
+        }
+      },
       "poe": {
         "default": "mdi:ethernet",
         "state": {

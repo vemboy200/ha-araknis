@@ -15,18 +15,22 @@ from .api import (
     AraknisError,
     AraknisRouterClient,
     AraknisSwitchClient,
+    AraknisWebSmartClient,
     RouterData,
     RouterInfo,
     SwitchData,
     SwitchInfo,
+    WebSmartData,
+    WebSmartInfo,
 )
 from .const import DOMAIN, SCAN_INTERVAL
 
 _LOGGER = logging.getLogger(__name__)
 
-type AraknisConfigEntry = ConfigEntry[
-    AraknisSwitchCoordinator | AraknisRouterCoordinator
-]
+type AraknisConfigEntry = ConfigEntry[AnyAraknisCoordinator]
+type AnyAraknisCoordinator = (
+    AraknisSwitchCoordinator | AraknisRouterCoordinator | AraknisWebSmartCoordinator
+)
 
 
 async def _call[T](request: Awaitable[T]) -> T:
@@ -45,7 +49,7 @@ async def _call[T](request: Awaitable[T]) -> T:
         ) from err
 
 
-class AraknisCoordinator[DataT: SwitchData | RouterData, InfoT](
+class AraknisCoordinator[DataT: SwitchData | RouterData | WebSmartData, InfoT](
     DataUpdateCoordinator[DataT]
 ):
     """Polls one Araknis device."""
@@ -104,4 +108,24 @@ class AraknisRouterCoordinator(AraknisCoordinator[RouterData, RouterInfo]):
         self.info = await _call(self.client.get_info())
 
     async def _async_update_data(self) -> RouterData:
+        return await _call(self.client.get_data())
+
+
+class AraknisWebSmartCoordinator(AraknisCoordinator[WebSmartData, WebSmartInfo]):
+    """Polls one web-smart switch."""
+
+    def __init__(
+        self,
+        hass: HomeAssistant,
+        entry: AraknisConfigEntry,
+        client: AraknisWebSmartClient,
+    ) -> None:
+        """Initialize the coordinator."""
+        super().__init__(hass, entry)
+        self.client = client
+
+    async def _async_setup(self) -> None:
+        self.info = await _call(self.client.get_info())
+
+    async def _async_update_data(self) -> WebSmartData:
         return await _call(self.client.get_data())

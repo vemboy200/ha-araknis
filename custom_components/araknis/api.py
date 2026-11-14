@@ -676,31 +676,180 @@ class AraknisRouterClient:
         self._login_id = None
 
 
+@dataclass(frozen=True, slots=True)
+class WebSmartData:
+    """A snapshot of a web-smart switch's state."""
+
+    uptime: int
+    """Seconds since the switch started."""
+    cloud_connected: bool
+    """Connected to the OvrC cloud service."""
+    cloud_enabled: bool
+    """The OvrC setting is turned on."""
+
+
+@dataclass(frozen=True, slots=True)
+class WebSmartInfo:
+    """Details about a web-smart switch that only change with a firmware update or setting."""
+
+    mac: str
+    model: str
+    firmware: str
+    serial_number: str
+    """The service tag."""
+    name: str
+
+
+_INFO_ROW = re.compile(r"<th[^>]*>(.*?)</th>\s*<td[^>]*>(.*?)</td", re.DOTALL)
+_UPTIME = re.compile(r"(?:(\d+)\s*days?\s*)?(\d+):(\d{2}):(\d{2})")
+_OVRC_CHECKED = re.compile(
+    r'name="ovrc_state"\s+value="([01])"\s+checked', re.IGNORECASE
+)
+
+
+def _parse_uptime(text: str) -> int:
+    """Turn an uptime like "85 days 15:51:39" into seconds."""
+    match = _UPTIME.search(text)
+    if not match:
+        raise ValueError(f"Unexpected uptime {text!r}")
+    days, hours, minutes, seconds = (int(part or 0) for part in match.groups())
+    return ((days * 24 + hours) * 60 + minutes) * 60 + seconds
+
+
+class AraknisWebSmartClient:
+    """Talks to one Araknis web-smart switch (AN-110-SW), checked on an AN-110-SW-16.
+
+    Every page sits behind HTTP Basic authentication, with no session. The
+    pages are server-rendered HTML: info.cgi is the System Information table,
+    webovrc.cgi the OvrC setting form.
+    """
+
+    def __init__(
+        self,
+        session: aiohttp.ClientSession,
+        host: str,
+        username: str,
+        password: str,
+    ) -> None:
+        """Initialize the client."""
+        self._session = session
+        self._base = f"http://{host.strip()}"
+        self._headers = {"Authorization": aiohttp.encode_basic_auth(username, password)}
+        self._next_login = 0.0
+
+    async def _request(
+        self, method: str, page: str, data: dict[str, str] | None = None
+    ) -> str:
+        now = time.monotonic()
+        if now < self._next_login:
+            raise AraknisAuthError(
+                "Login suppressed after a rejected login, "
+                f"retrying in {int(self._next_login - now)} s"
+            )
+        try:
+            async with self._session.request(
+                method,
+                f"{self._base}/{page}",
+                data=data,
+                headers=self._headers,
+                timeout=_TIMEOUT,
+            ) as resp:
+                if resp.status == 401:
+                    self._next_login = now + LOGIN_BACKOFF
+                    raise AraknisAuthError("The switch rejected the login")
+                resp.raise_for_status()
+                return await resp.text(errors="replace")
+        except (aiohttp.ClientError, TimeoutError) as err:
+            raise AraknisConnectionError(
+                f"Error talking to {self._base}: {err!r}"
+            ) from err
+
+    async def _get_info_table(self) -> dict[str, str]:
+        page = await self._request("GET", "info.cgi")
+        return {
+            re.sub(r"<[^>]+>", "", key).strip(): re.sub(r"<[^>]+>", "", value).strip()
+            for key, value in _INFO_ROW.findall(page)
+        }
+
+    async def get_info(self) -> WebSmartInfo:
+        """Read the model, MAC, firmware, service tag and name."""
+        table = await self._get_info_table()
+        try:
+            return WebSmartInfo(
+                mac=table["MAC Address"],
+                model=table["Device Type"],
+                firmware=table["Firmware Version"],
+                serial_number=table["Service Tag"],
+                name=table.get("Device Name") or table["Device Type"],
+            )
+        except KeyError as err:
+            raise AraknisConnectionError(
+                f"Switch sent its details in an unexpected format: {err!r}"
+            ) from err
+
+    async def get_data(self) -> WebSmartData:
+        """Read the uptime and OvrC state."""
+        table = await self._get_info_table()
+        ovrc_page = await self._request("GET", "webovrc.cgi")
+        checked = _OVRC_CHECKED.search(ovrc_page)
+        if checked is None:
+            raise AraknisConnectionError("Switch sent no OvrC setting")
+        try:
+            return WebSmartData(
+                uptime=_parse_uptime(table["System Uptime"]),
+                cloud_connected=table["OvrC State"] == "Connected",
+                cloud_enabled=checked[1] == "1",
+            )
+        except (KeyError, ValueError) as err:
+            raise AraknisConnectionError(
+                f"Switch sent its status in an unexpected format: {err!r}"
+            ) from err
+
+    async def set_cloud(self, enabled: bool) -> None:
+        """Turn the OvrC cloud service on or off, as the OvrC Setting page does."""
+        await self._request(
+            "POST",
+            "webovrc.cgi",
+            {"ovrc_state": "1" if enabled else "0", "cmd": "OvrC Setting"},
+        )
+
+    async def logout(self) -> None:
+        """Do nothing: Basic authentication has no session to end."""
+
+
 DEVICE_TYPE_SWITCH = "switch"
 DEVICE_TYPE_ROUTER = "router"
+DEVICE_TYPE_WEB_SMART = "web_smart"
 
 
 async def async_detect_device_type(session: aiohttp.ClientSession, host: str) -> str:
     """Tell a switch from a router, without logging in.
 
     Switches serve their login key at /conf/key. Routers redirect that to their
-    login page, which posts to /cgi-bin/login.cgi.
+    login page, which posts to /cgi-bin/login.cgi. Web-smart switches ask for
+    a Basic authentication login (realm "Switch") on every page.
     """
     base = f"http://{host.strip()}"
 
-    async def fetch(path: str) -> tuple[int, str]:
+    async def fetch(path: str) -> tuple[int, str, str]:
         try:
             async with session.get(
                 f"{base}{path}", allow_redirects=False, timeout=_TIMEOUT
             ) as resp:
-                return resp.status, await resp.text()
+                return (
+                    resp.status,
+                    resp.headers.get("WWW-Authenticate", ""),
+                    await resp.text(errors="replace"),
+                )
         except (aiohttp.ClientError, TimeoutError) as err:
             raise AraknisConnectionError(f"Error talking to {base}: {err!r}") from err
 
-    status, text = await fetch("/conf/key")
+    status, auth, text = await fetch("/conf/key")
     if status == 200 and "PUBLIC KEY" in text:
         return DEVICE_TYPE_SWITCH
-    status, text = await fetch("/login.html")
+    if status == 401 and auth.startswith("Basic") and 'realm="Switch"' in auth:
+        return DEVICE_TYPE_WEB_SMART
+    status, _, text = await fetch("/login.html")
     if status == 200 and "/cgi-bin/login.cgi" in text:
         return DEVICE_TYPE_ROUTER
     raise AraknisUnsupportedDeviceError(

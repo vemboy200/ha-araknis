@@ -12,10 +12,14 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .api import PoePort, RouterWan
 from .const import DOMAIN, MANUFACTURER
-from .coordinator import AraknisRouterCoordinator, AraknisSwitchCoordinator
+from .coordinator import (
+    AnyAraknisCoordinator,
+    AraknisRouterCoordinator,
+    AraknisSwitchCoordinator,
+)
 
 
-class AraknisEntity[CoordinatorT: AraknisSwitchCoordinator | AraknisRouterCoordinator](
+class AraknisEntity[CoordinatorT: AnyAraknisCoordinator](
     CoordinatorEntity[CoordinatorT]
 ):
     """An entity belonging to one Araknis switch or router."""
@@ -31,9 +35,7 @@ class AraknisEntity[CoordinatorT: AraknisSwitchCoordinator | AraknisRouterCoordi
         self._attr_device_info = device_info(coordinator)
 
 
-def device_info(
-    coordinator: AraknisSwitchCoordinator | AraknisRouterCoordinator,
-) -> DeviceInfo:
+def device_info(coordinator: AnyAraknisCoordinator) -> DeviceInfo:
     """Return the device info for the switch or router itself."""
     entry = coordinator.config_entry
     assert entry.unique_id is not None

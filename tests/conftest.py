@@ -18,7 +18,11 @@ from cryptography.hazmat.primitives.asymmetric import rsa
 from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME
 from homeassistant.core import HomeAssistant
 import pytest
-from pytest_homeassistant.common import MockConfigEntry, load_json_object_fixture
+from pytest_homeassistant.common import (
+    MockConfigEntry,
+    load_fixture,
+    load_json_object_fixture,
+)
 from pytest_homeassistant.test_util.aiohttp import AiohttpClientMocker
 
 from custom_components.araknis.const import CONF_DEVICE_TYPE, DOMAIN
@@ -226,3 +230,66 @@ async def init_router(
     await hass.config_entries.async_setup(router_config_entry.entry_id)
     await hass.async_block_till_done()
     return router_config_entry
+
+
+WEB_SMART_MAC = "aa:bb:cc:dd:ee:02"
+WEB_SMART_ENTRY_DATA = {**USER_INPUT, CONF_DEVICE_TYPE: "web_smart"}
+
+
+def web_smart_page(name: str) -> re.Pattern[str]:
+    """Match one of the web-smart switch's pages."""
+    return re.compile(rf"/{name}\.cgi$")
+
+
+@pytest.fixture
+def web_smart_login_ok() -> bool:
+    """Whether the mocked web-smart switch accepts the login."""
+    return True
+
+
+@pytest.fixture
+def mock_web_smart(
+    aioclient_mock: AiohttpClientMocker, web_smart_login_ok: bool
+) -> AiohttpClientMocker:
+    """Mock an AN-110 web-smart switch, from a real AN-110-SW-16 (sanitized)."""
+    challenge = {"WWW-Authenticate": 'Basic realm="Switch"'}
+    # Every page asks for a login; the mock can't check one, so /conf/key
+    # stands in for a request without it.
+    aioclient_mock.get(re.compile(r"/conf/key$"), status=401, headers=challenge)
+    for name, fixture in (
+        ("info", "web_smart_info.html"),
+        ("webovrc", "web_smart_webovrc.html"),
+    ):
+        if web_smart_login_ok:
+            aioclient_mock.get(web_smart_page(name), text=load_fixture(fixture, DOMAIN))
+        else:
+            aioclient_mock.get(web_smart_page(name), status=401, headers=challenge)
+    aioclient_mock.post(
+        web_smart_page("webovrc"), text=load_fixture("web_smart_webovrc.html", DOMAIN)
+    )
+    return aioclient_mock
+
+
+@pytest.fixture
+def web_smart_config_entry() -> MockConfigEntry:
+    """A config entry for one web-smart switch."""
+    return MockConfigEntry(
+        domain=DOMAIN,
+        title="AN-110-SW-16",
+        unique_id=WEB_SMART_MAC,
+        data=WEB_SMART_ENTRY_DATA,
+        minor_version=2,
+    )
+
+
+@pytest.fixture
+async def init_web_smart(
+    hass: HomeAssistant,
+    web_smart_config_entry: MockConfigEntry,
+    mock_web_smart: AiohttpClientMocker,
+) -> MockConfigEntry:
+    """Set up the integration with the mocked web-smart switch."""
+    web_smart_config_entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(web_smart_config_entry.entry_id)
+    await hass.async_block_till_done()
+    return web_smart_config_entry

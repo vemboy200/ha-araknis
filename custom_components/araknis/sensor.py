@@ -27,9 +27,11 @@ from homeassistant.util import dt as dt_util
 
 from .api import POE_STATUS, PoePort, RouterData, RouterWan, SwitchData
 from .coordinator import (
+    AnyAraknisCoordinator,
     AraknisConfigEntry,
     AraknisRouterCoordinator,
     AraknisSwitchCoordinator,
+    AraknisWebSmartCoordinator,
 )
 from .entity import AraknisEntity, AraknisPortEntity, AraknisWanEntity
 
@@ -198,6 +200,9 @@ async def async_setup_entry(
     """Set up sensors."""
     coordinator = entry.runtime_data
     entities: list[SensorEntity] = [AraknisBootTimeSensor(coordinator)]
+    if isinstance(coordinator, AraknisWebSmartCoordinator):
+        async_add_entities(entities)
+        return
     if isinstance(coordinator, AraknisRouterCoordinator):
         entities.extend(
             AraknisRouterSensor(coordinator, description)
@@ -263,18 +268,14 @@ class AraknisRouterSensor(AraknisEntity[AraknisRouterCoordinator], SensorEntity)
         return self.entity_description.value_fn(self.coordinator.data)
 
 
-class AraknisBootTimeSensor(
-    AraknisEntity[AraknisSwitchCoordinator | AraknisRouterCoordinator], SensorEntity
-):
-    """When the switch or router last started, worked out from its uptime."""
+class AraknisBootTimeSensor(AraknisEntity[AnyAraknisCoordinator], SensorEntity):
+    """When the device last started, worked out from its uptime."""
 
     _attr_device_class = SensorDeviceClass.TIMESTAMP
     _attr_entity_category = EntityCategory.DIAGNOSTIC
     _attr_translation_key = "last_restart"
 
-    def __init__(
-        self, coordinator: AraknisSwitchCoordinator | AraknisRouterCoordinator
-    ) -> None:
+    def __init__(self, coordinator: AnyAraknisCoordinator) -> None:
         """Initialize the sensor."""
         super().__init__(coordinator, "last_restart")
         self._boot_time: datetime | None = None

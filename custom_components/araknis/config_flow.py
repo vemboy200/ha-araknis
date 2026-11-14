@@ -21,13 +21,16 @@ import voluptuous as vol
 
 from .api import (
     DEVICE_TYPE_ROUTER,
+    DEVICE_TYPE_WEB_SMART,
     AraknisAuthError,
     AraknisConnectionError,
     AraknisRouterClient,
     AraknisSwitchClient,
     AraknisUnsupportedDeviceError,
+    AraknisWebSmartClient,
     RouterInfo,
     SwitchInfo,
+    WebSmartInfo,
     async_detect_device_type,
 )
 from .const import CONF_DEVICE_TYPE, DOMAIN
@@ -61,17 +64,19 @@ class AraknisConfigFlow(ConfigFlow, domain=DOMAIN):
 
     async def _async_try_login(
         self, host: str, username: str, password: str
-    ) -> tuple[SwitchInfo | RouterInfo | None, dict[str, str]]:
+    ) -> tuple[SwitchInfo | RouterInfo | WebSmartInfo | None, dict[str, str]]:
         """Log in and read the device's details. Return them and any errors.
 
         Also sets self._device_type.
         """
         session = async_get_clientsession(self.hass)
-        client: AraknisSwitchClient | AraknisRouterClient
+        client: AraknisSwitchClient | AraknisRouterClient | AraknisWebSmartClient
         try:
             self._device_type = await async_detect_device_type(session, host)
             if self._device_type == DEVICE_TYPE_ROUTER:
                 client = AraknisRouterClient(session, host, username, password)
+            elif self._device_type == DEVICE_TYPE_WEB_SMART:
+                client = AraknisWebSmartClient(session, host, username, password)
             else:
                 client = AraknisSwitchClient(session, host, username, password)
             info = await client.get_info()

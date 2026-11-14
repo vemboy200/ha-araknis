@@ -1,6 +1,6 @@
 # Araknis Networks for Home Assistant
 
-A custom integration for Araknis Networks equipment. It monitors and controls PoE on Araknis 210-series managed switches, and monitors Araknis 310-series routers, over their local web interfaces.
+A custom integration for Araknis Networks equipment. It monitors and controls PoE on Araknis 210-series managed switches, monitors Araknis 310-series routers, and covers the little that AN-110 web-smart switches offer, over their local web interfaces.
 
 > [!WARNING]
 > Early work in progress, tested on AN-210-SW-8/16/24-POE switches and an AN-310-RT-4L2W router: reading data and turning PoE off and on work. Power cycling is accepted by the switch but has only been tried on an empty port, so its effect on a powered device hasn't been seen yet. The switch and router **Restart** buttons send the same request as the devices' own web pages, but haven't been tried on real hardware.
@@ -24,7 +24,14 @@ One device per router, with:
 - A **Restart** button
 - One child device per WAN port, with a **connected** sensor, **link speed** and the WAN **IP address** (disabled by default)
 
-Switches and routers are polled every 30 seconds.
+One device per AN-110 web-smart switch, with:
+
+- **Last restart** and **Cloud connection** (OvrC) as diagnostic sensors
+- An **OvrC cloud service** switch, the same setting as the switch's OvrC Setting page. Turning it off drops the OvrC connection within a poll; turning it back on reconnects in about a minute.
+
+That's all its web interface has: it has no PoE, port status or MAC address table.
+
+All devices are polled every 30 seconds.
 
 ## Supported devices
 
@@ -36,6 +43,7 @@ Tested:
 | AN-210-SW-16-POE | PoE switch |
 | AN-210-SW-24-POE | PoE switch |
 | AN-310-RT-4L2W | Router |
+| AN-110-SW-16 | Web-smart switch (firmware 1.1.21) |
 
 Likely to work, but untested:
 
@@ -44,7 +52,6 @@ Likely to work, but untested:
 
 Not supported:
 
-- Web-smart switches, such as the non-PoE 16-port models that ask for a login in a browser pop-up. They use a different interface.
 - Araknis access points.
 
 ### Araknis access points: consider OpenWrt
@@ -86,7 +93,7 @@ Copy `custom_components/araknis` into your Home Assistant `config/custom_compone
 
 ## Setup
 
-Home Assistant finds switches (over SSDP) and routers (over mDNS) on its own and offers to add them: you only enter the login. Otherwise, add the integration from **Settings → Devices & services** and enter the device's IP address and the username and password for its web interface. The integration works out whether it's a switch or a router. Add each device separately. A static IP or DHCP reservation for each switch is recommended.
+Home Assistant finds PoE switches (over SSDP) and routers (over mDNS) on its own and offers to add them: you only enter the login. Web-smart switches aren't found automatically. Otherwise, add the integration from **Settings → Devices & services** and enter the device's IP address and the username and password for its web interface. The integration works out whether it's a switch, a web-smart switch or a router. Add each device separately. A static IP or DHCP reservation for each switch is recommended.
 
 ## Removal
 
@@ -105,6 +112,7 @@ Nothing is changed on the switches or router when you remove the integration.
 - Port names are read when the integration is set up. Reload the integration after renaming a port on the switch.
 - SFP ports and link aggregation groups have no PoE and get no entities.
 - Routers use a different login: the password is encrypted with a key built into the router's login page, and the session is a cookie. **Five failed logins lock the router's login for 30 minutes**, so double-check the password.
+- AN-110 web-smart switches ask for their login in a browser pop-up (HTTP Basic authentication), which sends it unencrypted with every request. The same goes for their own web page.
 - There are no device trackers for the router's clients. The router lists every client with an "online" flag, but on a real AN-310-RT-4L2W that flag said offline for many Wi-Fi devices that were connected and working, such as phones, ESPHome devices and kitchen appliances. Trackers built on it would show those devices as away, so they were left out. The router has no other list of connected devices: which Wi-Fi devices are connected is known by the access points, not the router.
 
 ## Credits

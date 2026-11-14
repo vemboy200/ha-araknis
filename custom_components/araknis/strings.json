@@ -47,7 +47,7 @@
           "password": "The password for the device's web interface.",
           "username": "The username for the device's web interface."
         },
-        "description": "Set up an Araknis 210 or 310-series PoE switch, or a 310-series router. Routers lock their login for 30 minutes after 5 failed attempts."
+        "description": "Set up an Araknis 210 or 310-series PoE switch, an AN-110 web-smart switch, or a 310-series router. Routers lock their login for 30 minutes after 5 failed attempts."
       }
     }
   },
@@ -115,6 +115,9 @@
       }
     },
     "switch": {
+      "cloud_service": {
+        "name": "OvrC cloud service"
+      },
       "poe": {
         "name": "PoE"
       }

@@ -1,4 +1,4 @@
-"""Binary sensors for Araknis routers and their WAN ports."""
+"""Binary sensors for Araknis routers, web-smart switches and WAN ports."""
 
 from __future__ import annotations
 
@@ -10,7 +10,11 @@ from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
-from .coordinator import AraknisConfigEntry, AraknisRouterCoordinator
+from .coordinator import (
+    AraknisConfigEntry,
+    AraknisRouterCoordinator,
+    AraknisWebSmartCoordinator,
+)
 from .entity import AraknisEntity, AraknisWanEntity
 
 PARALLEL_UPDATES = 0
@@ -23,29 +27,37 @@ async def async_setup_entry(
 ) -> None:
     """Set up binary sensors."""
     coordinator = entry.runtime_data
-    assert isinstance(coordinator, AraknisRouterCoordinator)
-    entities: list[BinarySensorEntity] = [AraknisCloudSensor(coordinator)]
-    entities.extend(
-        AraknisWanConnectedSensor(coordinator, interface)
-        for interface in coordinator.data.wans
+    assert isinstance(
+        coordinator, AraknisRouterCoordinator | AraknisWebSmartCoordinator
     )
+    entities: list[BinarySensorEntity] = [AraknisCloudSensor(coordinator)]
+    if isinstance(coordinator, AraknisRouterCoordinator):
+        entities.extend(
+            AraknisWanConnectedSensor(coordinator, interface)
+            for interface in coordinator.data.wans
+        )
     async_add_entities(entities)
 
 
-class AraknisCloudSensor(AraknisEntity[AraknisRouterCoordinator], BinarySensorEntity):
-    """Whether the router is connected to the OvrC cloud service."""
+class AraknisCloudSensor(
+    AraknisEntity[AraknisRouterCoordinator | AraknisWebSmartCoordinator],
+    BinarySensorEntity,
+):
+    """Whether the device is connected to the OvrC cloud service."""
 
     _attr_device_class = BinarySensorDeviceClass.CONNECTIVITY
     _attr_entity_category = EntityCategory.DIAGNOSTIC
     _attr_translation_key = "cloud_connection"
 
-    def __init__(self, coordinator: AraknisRouterCoordinator) -> None:
+    def __init__(
+        self, coordinator: AraknisRouterCoordinator | AraknisWebSmartCoordinator
+    ) -> None:
         """Initialize the binary sensor."""
         super().__init__(coordinator, "cloud_connection")
 
     @property
     def is_on(self) -> bool:
-        """Return if the router is connected to OvrC."""
+        """Return if the device is connected to OvrC."""
         return self.coordinator.data.cloud_connected
 
 
