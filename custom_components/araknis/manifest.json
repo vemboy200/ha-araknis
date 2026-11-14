@@ -24,7 +24,7 @@
       "deviceType": "urn:AN-210-SW-24-POE:device:Switch:1"
     }
   ],
-  "version": "0.2.0",
+  "version": "0.3.0",
   "zeroconf": [
     {
       "type": "_http._tcp.local.",
