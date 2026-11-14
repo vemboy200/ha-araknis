@@ -47,7 +47,19 @@ Not supported:
 
 ### Araknis access points: consider OpenWrt
 
-The AN-500-AP-I-AC and AN-700-AP-I-AC (and the AN-300-AP-I-N) can be flashed with [OpenWrt](https://openwrt.org/), and doing so is strongly recommended. On the stock firmware, the author saw the access points share their Wi-Fi network names and passwords with anything on the LAN, without a login. Check the OpenWrt page for your exact model before flashing, and keep in mind that flashing replaces the Araknis firmware and its OvrC cloud management.
+The AN-500-AP-I-AC and AN-700-AP-I-AC (and the AN-300-AP-I-N) can be flashed with [OpenWrt](https://openwrt.org/), and doing so is strongly recommended.
+
+The author audited four AN-700-AP-I-AC units on their stock firmware and found that, over SNMP and without any login, anyone on the LAN could read:
+
+- the Wi-Fi password (WPA passphrase) for both bands, in cleartext
+- the SNMP read, write and trap community strings
+- the SNMPv3 credentials, still at their factory default
+
+Every unit also had the same SSH host key, built into the firmware. The stock firmware can't be patched to fix this, so replacing it is the only real fix. The AN-500 and AN-300 weren't tested, but Araknis publishes [one set of firmware release notes](https://www.control4.com/docs/product/an-x00-ap/release-notes/english/latest) for all its AN-x00 access points.
+
+Check the OpenWrt page for your exact model before flashing, back up the stock firmware and calibration data first, and keep in mind that flashing replaces the Araknis firmware and its OvrC cloud management.
+
+The switches and routers can't be flashed. If you use SNMP on them, change their community strings from the defaults. This integration doesn't use SNMP.
 
 ## Use cases
 
