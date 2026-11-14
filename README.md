@@ -26,7 +26,7 @@ Switches and routers are polled every 30 seconds.
 
 ## Setup
 
-Add the integration from **Settings → Devices & services** and enter the device's IP address and the username and password for its web interface. The integration works out whether it's a switch or a router. Add each device separately. A static IP or DHCP reservation for each switch is recommended.
+Home Assistant finds switches (over SSDP) and routers (over mDNS) on its own and offers to add them: you only enter the login. Otherwise, add the integration from **Settings → Devices & services** and enter the device's IP address and the username and password for its web interface. The integration works out whether it's a switch or a router. Add each device separately. A static IP or DHCP reservation for each switch is recommended.
 
 ## How it works and caveats
 

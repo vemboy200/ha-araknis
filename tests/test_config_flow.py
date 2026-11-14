@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+from ipaddress import ip_address
 from typing import Any
 
-from homeassistant.config_entries import SOURCE_SSDP, SOURCE_USER
+from homeassistant.config_entries import SOURCE_SSDP, SOURCE_USER, SOURCE_ZEROCONF
 from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
@@ -14,6 +15,7 @@ from homeassistant.helpers.service_info.ssdp import (
     ATTR_UPNP_UDN,
     SsdpServiceInfo,
 )
+from homeassistant.helpers.service_info.zeroconf import ZeroconfServiceInfo
 import pytest
 from pytest_homeassistant.common import MockConfigEntry
 from pytest_homeassistant.test_util.aiohttp import AiohttpClientMocker
@@ -254,3 +256,50 @@ async def test_ssdp_discovery_updates_host(
     assert result["type"] is FlowResultType.ABORT
     assert result["reason"] == "already_configured"
     assert mock_config_entry.data[CONF_HOST] == "192.0.2.20"
+
+
+ROUTER_ZEROCONF = ZeroconfServiceInfo(
+    ip_address=ip_address(HOST),
+    ip_addresses=[ip_address(HOST)],
+    hostname="AN-310-RT-4L2W.local.",
+    name="AN-310-RT-4L2W._http._tcp.local.",
+    port=80,
+    type="_http._tcp.local.",
+    properties={},
+)
+
+
+async def test_zeroconf_discovery(
+    hass: HomeAssistant, mock_router: AiohttpClientMocker
+) -> None:
+    """Test adding a router found over mDNS."""
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": SOURCE_ZEROCONF}, data=ROUTER_ZEROCONF
+    )
+    assert result["type"] is FlowResultType.FORM
+    assert result["step_id"] == "discovery_confirm"
+    flow = hass.config_entries.flow.async_get(result["flow_id"])
+    assert flow["context"]["title_placeholders"] == {"name": f"AN-310-RT-4L2W ({HOST})"}
+
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"],
+        {
+            CONF_USERNAME: USER_INPUT[CONF_USERNAME],
+            CONF_PASSWORD: USER_INPUT[CONF_PASSWORD],
+        },
+    )
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert result["data"] == ROUTER_ENTRY_DATA
+    assert result["result"].unique_id == ROUTER_MAC
+
+
+async def test_zeroconf_discovery_already_configured(
+    hass: HomeAssistant, router_config_entry: MockConfigEntry
+) -> None:
+    """Test a router that is already set up is not offered again."""
+    router_config_entry.add_to_hass(hass)
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": SOURCE_ZEROCONF}, data=ROUTER_ZEROCONF
+    )
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "already_configured"

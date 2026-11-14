@@ -16,6 +16,7 @@ from homeassistant.helpers.service_info.ssdp import (
     ATTR_UPNP_UDN,
     SsdpServiceInfo,
 )
+from homeassistant.helpers.service_info.zeroconf import ZeroconfServiceInfo
 import voluptuous as vol
 
 from .api import (
@@ -131,10 +132,25 @@ class AraknisConfigFlow(ConfigFlow, domain=DOMAIN):
         self.context["title_placeholders"] = {"name": f"{model} ({host})"}
         return await self.async_step_discovery_confirm()
 
+    async def async_step_zeroconf(
+        self, discovery_info: ZeroconfServiceInfo
+    ) -> ConfigFlowResult:
+        """Handle a router found over mDNS."""
+        # The router's advertisement carries no MAC address, so a router that
+        # is already set up is recognized by its address until the login
+        # gives its MAC.
+        host = discovery_info.host
+        self._async_abort_entries_match({CONF_HOST: host})
+        self._host = host
+        # The service is named after the model, e.g. AN-310-RT-4L2W.
+        model = discovery_info.name.split(".")[0]
+        self.context["title_placeholders"] = {"name": f"{model} ({host})"}
+        return await self.async_step_discovery_confirm()
+
     async def async_step_discovery_confirm(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
-        """Ask for the login of a discovered switch."""
+        """Ask for the login of a discovered switch or router."""
         errors: dict[str, str] = {}
         if user_input is not None:
             info, errors = await self._async_try_login(

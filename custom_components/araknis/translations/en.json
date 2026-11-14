@@ -22,7 +22,7 @@
           "password": "The password for the device's web interface.",
           "username": "The username for the device's web interface."
         },
-        "description": "An Araknis switch was found at {host}. Enter its login to add it."
+        "description": "An Araknis device was found at {host}. Enter its login to add it."
       },
       "reauth_confirm": {
         "data": {
