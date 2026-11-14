@@ -62,13 +62,13 @@ Not supported:
 
 The AN-500-AP-I-AC and AN-700-AP-I-AC (and the AN-300-AP-I-N) can be flashed with [OpenWrt](https://openwrt.org/), and doing so is strongly recommended.
 
-The author audited four AN-700-AP-I-AC units on their stock firmware and found that, over SNMP and without any login, anyone on the LAN could read:
+SNMP is off in the stock firmware's defaults, but it had been turned on (probably by the installer or through OvrC) on all four AN-700-AP-I-AC units the author audited. Once it's on, the stock settings let anyone on the LAN, without any login, read:
 
 - the Wi-Fi password (WPA passphrase) for both bands, in cleartext
 - the SNMP read, write and trap community strings
 - the SNMPv3 credentials, still at their factory default
 
-Every unit also had the same SSH host key, built into the firmware. The stock firmware can't be patched to fix this, so replacing it is the only real fix. The AN-500 and AN-300 weren't tested, but Araknis publishes [one set of firmware release notes](https://www.control4.com/docs/product/an-x00-ap/release-notes/english/latest) for all its AN-x00 access points.
+If you keep the stock firmware, check whether SNMP is on and turn it off if you don't need it. Separately, every unit on the same firmware version has the same SSH host key, built into the firmware (SSH itself is off by default). Settings can't change that, so replacing the firmware is the only full fix. The AN-500 and AN-300 weren't tested, but Araknis publishes [one set of firmware release notes](https://www.control4.com/docs/product/an-x00-ap/release-notes/english/latest) for all its AN-x00 access points.
 
 Check the OpenWrt page for your exact model before flashing, back up the stock firmware and calibration data first, and keep in mind that flashing replaces the Araknis firmware and its OvrC cloud management.
 
