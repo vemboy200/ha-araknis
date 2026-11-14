@@ -18,6 +18,7 @@ from homeassistant.const import (
     UnitOfDataRate,
     UnitOfElectricCurrent,
     UnitOfElectricPotential,
+    UnitOfInformation,
     UnitOfPower,
     UnitOfTemperature,
 )
@@ -67,7 +68,7 @@ class AraknisRouterSensorDescription(SensorEntityDescription):
 class AraknisWanSensorDescription(SensorEntityDescription):
     """Describes a sensor for one WAN port."""
 
-    value_fn: Callable[[RouterWan], int | str | None]
+    value_fn: Callable[[RouterWan], float | int | str | None]
 
 
 PORT_SENSORS: tuple[AraknisPortSensorDescription, ...] = (
@@ -193,6 +194,31 @@ WAN_SENSORS: tuple[AraknisWanSensorDescription, ...] = (
         entity_category=EntityCategory.DIAGNOSTIC,
         native_unit_of_measurement=UnitOfDataRate.MEGABITS_PER_SECOND,
         value_fn=lambda wan: wan.link_speed,
+    ),
+    AraknisWanSensorDescription(
+        key="data_sent",
+        translation_key="data_sent",
+        device_class=SensorDeviceClass.DATA_SIZE,
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        native_unit_of_measurement=UnitOfInformation.GIGABYTES,
+        suggested_display_precision=1,
+        value_fn=lambda wan: wan.data_sent,
+    ),
+    AraknisWanSensorDescription(
+        key="data_received",
+        translation_key="data_received",
+        device_class=SensorDeviceClass.DATA_SIZE,
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        native_unit_of_measurement=UnitOfInformation.GIGABYTES,
+        suggested_display_precision=1,
+        value_fn=lambda wan: wan.data_received,
+    ),
+    AraknisWanSensorDescription(
+        key="errors",
+        translation_key="errors",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        value_fn=lambda wan: wan.errors,
     ),
     AraknisWanSensorDescription(
         key="ip_address",
@@ -356,6 +382,6 @@ class AraknisWanSensor(AraknisWanEntity, SensorEntity):
         self.entity_description = description
 
     @property
-    def native_value(self) -> int | str | None:
+    def native_value(self) -> float | int | str | None:
         """Return the sensor value."""
         return self.entity_description.value_fn(self.wan)

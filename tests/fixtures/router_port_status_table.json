@@ -1,0 +1,78 @@
+{
+  "WANs": [
+    {
+      "interface": "WAN1",
+      "name": "WAN1",
+      "speed": "1Gbps",
+      "set_speed": "Auto",
+      "current_speed": "1Gbps",
+      "duplex": "Full",
+      "sent": "414.3 GB",
+      "received": "705.2 GB",
+      "errors": "0",
+      "vlanId": "N/A"
+    },
+    {
+      "interface": "WAN2",
+      "name": "WAN2",
+      "speed": "N/C",
+      "set_speed": "Auto",
+      "current_speed": "N/C",
+      "duplex": "N/C",
+      "sent": "-",
+      "received": "-",
+      "errors": "-",
+      "vlanId": "N/A"
+    }
+  ],
+  "LANs": [
+    {
+      "interface": "LAN1",
+      "name": "LAN1",
+      "speed": "1Gbps",
+      "set_speed": "Auto",
+      "current_speed": "1Gbps",
+      "duplex": "Full",
+      "sent": "442.2 GB",
+      "received": "713.0 GB",
+      "errors": "0",
+      "vlanId": "N/A"
+    },
+    {
+      "interface": "LAN2",
+      "name": "LAN2",
+      "speed": "N/C",
+      "set_speed": "Auto",
+      "current_speed": "N/C",
+      "duplex": "N/C",
+      "sent": "-",
+      "received": "-",
+      "errors": "-",
+      "vlanId": "N/A"
+    },
+    {
+      "interface": "LAN3",
+      "name": "LAN3",
+      "speed": "N/C",
+      "set_speed": "Auto",
+      "current_speed": "N/C",
+      "duplex": "N/C",
+      "sent": "-",
+      "received": "-",
+      "errors": "-",
+      "vlanId": "N/A"
+    },
+    {
+      "interface": "LAN4",
+      "name": "LAN4",
+      "speed": "N/C",
+      "set_speed": "Auto",
+      "current_speed": "N/C",
+      "duplex": "N/C",
+      "sent": "-",
+      "received": "-",
+      "errors": "-",
+      "vlanId": "N/A"
+    }
+  ]
+}

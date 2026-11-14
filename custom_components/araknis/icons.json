@@ -21,11 +21,20 @@
       "cpu_usage": {
         "default": "mdi:cpu-64-bit"
       },
+      "data_received": {
+        "default": "mdi:download-network-outline"
+      },
+      "data_sent": {
+        "default": "mdi:upload-network-outline"
+      },
       "dhcp_clients": {
         "default": "mdi:devices"
       },
       "dhcp_pool_size": {
         "default": "mdi:ip-network"
+      },
+      "errors": {
+        "default": "mdi:alert-circle-outline"
       },
       "ip_address": {
         "default": "mdi:ip-network"

@@ -208,6 +208,11 @@ def mock_router(
     aioclient_mock.post(router_cgi("login"), json=router_login_reply)
     for name, reply in router_data.items():
         aioclient_mock.get(router_cgi(name), json=reply)
+    # The Ports page's request; the parameter is part of the URL.
+    aioclient_mock.get(
+        re.compile(r"/cgi-bin/port_status_table\.cgi\?info=port_status_table$"),
+        json=load_json_object_fixture("router_port_status_table.json", DOMAIN),
+    )
     # The router's web page ignores what this answers, so its reply is unknown.
     aioclient_mock.post(router_cgi("system_restart"), text="")
     return aioclient_mock

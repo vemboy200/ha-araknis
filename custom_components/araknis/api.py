@@ -427,6 +427,12 @@ class RouterWan:
     """DHCP, static and so on."""
     link_speed: int | None
     """Mbit/s, None while the link is down."""
+    data_sent: float | None = None
+    """Gigabytes sent since the router started, None without a link."""
+    data_received: float | None = None
+    """Gigabytes received since the router started, None without a link."""
+    errors: int | None = None
+    """Errors counted on the port, None without a link."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -491,10 +497,35 @@ def _address(value: str) -> str | None:
     return None if not value or value == _NO_ADDRESS else value
 
 
-def _parse_wan(row: dict[str, Any]) -> RouterWan:
+# The Ports page's counters come rounded and with a unit, like "414.3 GB".
+_DATA_SIZE = re.compile(r"(\d+(?:\.\d+)?)\s*([KMGT])B", re.IGNORECASE)
+_TO_GIGABYTES = {"K": 1e-6, "M": 1e-3, "G": 1.0, "T": 1e3}
+
+
+def _data_size(text: str) -> float | None:
+    """Turn a counter like "414.3 GB" into gigabytes. None for "-" or an unknown unit."""
+    match = _DATA_SIZE.fullmatch(text.strip())
+    if not match:
+        return None
+    return float(match[1]) * _TO_GIGABYTES[match[2].upper()]
+
+
+def _error_count(text: str) -> int | None:
+    """Turn the error counter into a number. None for "-" (no link)."""
+    text = text.strip()
+    return int(text) if text.isdigit() else None
+
+
+def _parse_wan(
+    row: dict[str, Any], counters: dict[str, Any] | None = None
+) -> RouterWan:
     speed = _wan_speed(row["current_speed"])
     ip_address = _address(row["IP_address"])
+    counters = counters or {}
     return RouterWan(
+        data_sent=_data_size(counters.get("sent", "-")),
+        data_received=_data_size(counters.get("received", "-")),
+        errors=_error_count(counters.get("errors", "-")),
         interface=row["interface"],
         name=row.get("name") or row["interface"],
         connected=speed is not None and ip_address is not None,
@@ -616,14 +647,20 @@ class AraknisRouterClient:
         )
 
     async def _send(
-        self, method: str, endpoint: str, data: dict[str, str] | None = None
+        self,
+        method: str,
+        endpoint: str,
+        data: dict[str, str] | None = None,
+        query: str = "",
     ) -> str:
         """Call a CGI, logging in first or again when needed."""
         async with self._lock:
             for _ in range(2):
                 if self._login_id is None:
                     await self._login()
-                text = await self._request(method, f"/cgi-bin/{endpoint}.cgi", data)
+                text = await self._request(
+                    method, f"/cgi-bin/{endpoint}.cgi{query}", data
+                )
                 if text is None:
                     # The session expired.
                     self._login_id = None
@@ -665,12 +702,20 @@ class AraknisRouterClient:
         stat = await self._get("stat")
         wan_reply = await self._get("wan_status_cards")
         clients = await self._get("client_count")
+        # What the Ports page asks for; without the parameter the reply is empty.
+        ports = self._parse(
+            await self._send(
+                "GET", "port_status_table", query="?info=port_status_table"
+            ),
+            "port_status_table",
+        )
         try:
+            counters = {row["interface"]: row for row in ports.get("WANs", [])}
             # Same formula as the router's web page.
             memory_total = int(stat["memTotal"])
             memory_used = memory_total - int(stat["memFree"])
             wans = [
-                _parse_wan(row)
+                _parse_wan(row, counters.get(row["interface"]))
                 for row in wan_reply["WANs"]
                 if str(row.get("is_hidden")) != "1"
             ]

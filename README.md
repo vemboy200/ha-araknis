@@ -24,7 +24,7 @@ One device per router, with:
 - **DHCP pool size** as a diagnostic sensor: how many addresses the DHCP ranges hold, reservations included. It's read when the integration starts, so reload it after changing the range.
 - **Cloud connection** (OvrC) as a diagnostic sensor
 - A **Restart** button
-- One child device per WAN port, with a **connected** sensor, **link speed** and the WAN **IP address** (disabled by default)
+- One child device per WAN port, with a **connected** sensor, **link speed**, the WAN **IP address** (disabled by default), and **Data sent**, **Data received** and **Errors** (diagnostic) from the router's Ports page. The router rounds the data counters to 0.1 GB, so they suit long-term totals, not live speeds: for those, the [UPnP/IGD](https://www.home-assistant.io/integrations/upnp/) integration works with the same router. The counters start again from zero when the router restarts.
 
 One device per AN-110 web-smart switch, with:
 

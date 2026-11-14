@@ -69,11 +69,20 @@
       "cpu_usage": {
         "name": "CPU usage"
       },
+      "data_received": {
+        "name": "Data received"
+      },
+      "data_sent": {
+        "name": "Data sent"
+      },
       "dhcp_clients": {
         "name": "DHCP clients"
       },
       "dhcp_pool_size": {
         "name": "DHCP pool size"
+      },
+      "errors": {
+        "name": "Errors"
       },
       "ip_address": {
         "name": "IP address"

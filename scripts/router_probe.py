@@ -17,7 +17,9 @@ import base64
 import getpass
 import json
 import pathlib
+import re
 import sys
+import time
 
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 import requests
@@ -104,6 +106,40 @@ def main() -> None:
         page = s.get(f"{base}/araknis-router.html", timeout=20, allow_redirects=False)
         out["_araknis_router_html"] = {"_http": page.status_code, "text": page.text}
         print(f"araknis-router.html: HTTP {page.status_code}, {len(page.text)} bytes")
+        # The Ports page and the scripts it loads, to find where its
+        # Sent/Received/Errors columns come from. GETs of pages and static
+        # scripts only.
+        pages: dict[str, object] = {}
+        ports = s.get(f"{base}/ports.html", timeout=20, allow_redirects=False)
+        pages["/ports.html"] = {"_http": ports.status_code, "text": ports.text}
+        print(f"ports.html: HTTP {ports.status_code}, {len(ports.text)} bytes")
+        for src in sorted(set(re.findall(r'src="(/[^"?#]+\.js)', ports.text))):
+            script = s.get(f"{base}{src}", timeout=20, allow_redirects=False)
+            pages[src] = {"_http": script.status_code, "text": script.text}
+            print(f"{src}: HTTP {script.status_code}, {len(script.text)} bytes")
+        out["_pages"] = pages
+        # What the Ports page actually requests (every 3 s): the CGI only
+        # answers with the info parameter. Asked twice, a few seconds apart,
+        # to see how the counters move.
+        for run in (1, 2):
+            if run == 2:
+                time.sleep(5)
+            resp = s.get(
+                f"{base}/cgi-bin/port_status_table.cgi",
+                params={"info": "port_status_table"},
+                timeout=20,
+                allow_redirects=False,
+            )
+            try:
+                out[f"port_status_table_info_{run}"] = json.loads(resp.text)
+            except ValueError:
+                out[f"port_status_table_info_{run}"] = {
+                    "_http": resp.status_code,
+                    "_raw_text": resp.text[:2000],
+                }
+            print(
+                f"port_status_table?info (run {run}): HTTP {resp.status_code}, {len(resp.text)} bytes"
+            )
     finally:
         s.post(f"{base}/cgi-bin/login.cgi", data={"logout": "1"}, timeout=5)
         print("logged out")

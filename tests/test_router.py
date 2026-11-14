@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import timedelta
+import re
 from typing import Any
 
 from freezegun.api import FrozenDateTimeFactory
@@ -19,7 +20,11 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr, entity_registry as er
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 import pytest
-from pytest_homeassistant.common import MockConfigEntry, async_fire_time_changed
+from pytest_homeassistant.common import (
+    MockConfigEntry,
+    async_fire_time_changed,
+    load_json_object_fixture,
+)
 from pytest_homeassistant.test_util.aiohttp import (
     AiohttpClientMocker,
     AiohttpClientMockResponse,
@@ -30,6 +35,7 @@ from custom_components.araknis.api import (
     AraknisAuthError,
     AraknisConnectionError,
     AraknisRouterClient,
+    _data_size,
     _wan_speed,
 )
 from custom_components.araknis.const import DOMAIN, SCAN_INTERVAL
@@ -159,6 +165,10 @@ async def test_session_expired_logs_in_again(
     for name, reply in router_data.items():
         if name != "stat":
             aioclient_mock.get(router_cgi(name), json=reply)
+    aioclient_mock.get(
+        re.compile(r"/cgi-bin/port_status_table\.cgi\?info=port_status_table$"),
+        json=load_json_object_fixture("router_port_status_table.json", DOMAIN),
+    )
     router_config_entry.add_to_hass(hass)
     await hass.config_entries.async_setup(router_config_entry.entry_id)
     assert router_config_entry.state is ConfigEntryState.LOADED
@@ -253,3 +263,22 @@ async def test_restart(
         for method, url, data, headers in aioclient_mock.mock_calls
         if method == "POST" and str(url).endswith("system_restart.cgi")
     ] == [({"reboot_status": "1"}, {"Cookie": "login_ID=session-1"})]
+
+
+@pytest.mark.usefixtures("init_router")
+async def test_wan_counters(hass: HomeAssistant) -> None:
+    """Test the WAN ports' traffic and error counters from the Ports page."""
+    assert state_of(hass, "sensor", "wan1_data_sent") == "414.3"
+    assert state_of(hass, "sensor", "wan1_data_received") == "705.2"
+    assert state_of(hass, "sensor", "wan1_errors") == "0"
+    # WAN2 has no link, so the router shows "-".
+    assert state_of(hass, "sensor", "wan2_data_sent") == STATE_UNKNOWN
+    assert state_of(hass, "sensor", "wan2_errors") == STATE_UNKNOWN
+
+
+def test_data_size_parsing() -> None:
+    """Test counters as the Ports page writes them. Only GB has been seen."""
+    assert _data_size("414.3 GB") == 414.3
+    assert _data_size("512.0 MB") == 0.512
+    assert _data_size("1.2 TB") == 1200.0
+    assert _data_size("-") is None
