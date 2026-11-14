@@ -26,13 +26,17 @@ Switches and routers are polled every 30 seconds.
 
 ## Installation
 
-With [HACS](https://hacs.xyz/):
+Requires Home Assistant 2026.11 or newer.
 
-1. In HACS, open the **⋮** menu and choose **Custom repositories**.
-2. Add `https://github.com/vemboy200/ha-araknis` with the type **Integration**.
-3. Search for **Araknis Networks**, download it, and restart Home Assistant.
+### Through the Marketplace
 
-Manually: copy `custom_components/araknis` into your Home Assistant `config/custom_components/` folder and restart Home Assistant.
+1. In Home Assistant, go to **Settings** > **Marketplace** and select **Add from link**.
+2. Enter `vemboy200/ha-araknis` and add it.
+3. Install **Araknis Networks** and restart Home Assistant.
+
+### Manual installation
+
+Copy `custom_components/araknis` into your Home Assistant `config/custom_components/` folder and restart Home Assistant.
 
 ## Setup
 
@@ -41,7 +45,7 @@ Home Assistant finds switches (over SSDP) and routers (over mDNS) on its own and
 ## Removal
 
 1. Go to **Settings → Devices & services**, open **Araknis Networks**, and delete each switch or router from its **⋮** menu.
-2. If you installed it with HACS, remove the integration in HACS, then restart Home Assistant. If you installed it manually, delete `config/custom_components/araknis` and restart.
+2. If you installed it through the Marketplace, uninstall **Araknis Networks** there, then restart Home Assistant. If you installed it manually, delete `config/custom_components/araknis` and restart.
 
 Nothing is changed on the switches or router when you remove the integration.
 
