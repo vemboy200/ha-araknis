@@ -102,6 +102,7 @@ Nothing is changed on the switches or router when you remove the integration.
 - Port names are read when the integration is set up. Reload the integration after renaming a port on the switch.
 - SFP ports and link aggregation groups have no PoE and get no entities.
 - Routers use a different login: the password is encrypted with a key built into the router's login page, and the session is a cookie. **Five failed logins lock the router's login for 30 minutes**, so double-check the password.
+- There are no device trackers for the router's clients. The router lists every client with an "online" flag, but on a real AN-310-RT-4L2W that flag said offline for many Wi-Fi devices that were connected and working, such as phones, ESPHome devices and kitchen appliances. Trackers built on it would show those devices as away, so they were left out. The router has no other list of connected devices: which Wi-Fi devices are connected is known by the access points, not the router.
 
 ## Credits
 
