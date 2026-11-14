@@ -24,6 +24,31 @@ One device per router, with:
 
 Switches and routers are polled every 30 seconds.
 
+## Supported devices
+
+Tested:
+
+| Model | Type |
+|---|---|
+| AN-210-SW-8-POE | PoE switch |
+| AN-210-SW-16-POE | PoE switch |
+| AN-210-SW-24-POE | PoE switch |
+| AN-310-RT-4L2W | Router |
+
+Likely to work, but untested:
+
+- Other 210 and 310-series PoE switches. The switch web API was first worked out on an AN-310-SW-24-POE in [lovintexas/Araknis_Switch](https://github.com/lovintexas/Araknis_Switch). Only the three switches above are found automatically; add others by IP address.
+- AN-110-RT routers: the 310 router's web page has code for the AN-110-RT-2L1W and AN-110-RT-2L1W-WIFI, so they appear to share its interface.
+
+Not supported:
+
+- Web-smart switches, such as the non-PoE 16-port models that ask for a login in a browser pop-up. They use a different interface.
+- Araknis access points.
+
+### Araknis access points: consider OpenWrt
+
+The AN-500-AP-I-AC and AN-700-AP-I-AC (and the AN-300-AP-I-N) can be flashed with [OpenWrt](https://openwrt.org/), and doing so is strongly recommended. On the stock firmware, the author saw the access points share their Wi-Fi network names and passwords with anything on the LAN, without a login. Check the OpenWrt page for your exact model before flashing, and keep in mind that flashing replaces the Araknis firmware and its OvrC cloud management.
+
 ## Use cases
 
 - **Power monitoring:** see how much power each PoE device draws (access points, cameras, PoE-powered shades and so on) and how much of the switch's PoE budget is in use. The power sensors can feed an [Integral helper](https://www.home-assistant.io/integrations/integration/) to track energy over time, or alert you when a device suddenly draws nothing because it has crashed or been unplugged.
@@ -65,7 +90,6 @@ Nothing is changed on the switches or router when you remove the integration.
 - Port names are read when the integration is set up. Reload the integration after renaming a port on the switch.
 - SFP ports and link aggregation groups have no PoE and get no entities.
 - Routers use a different login: the password is encrypted with a key built into the router's login page, and the session is a cookie. **Five failed logins lock the router's login for 30 minutes**, so double-check the password.
-- Web-smart switches (such as the non-PoE 16-port models that ask for a login in a browser pop-up) use a different interface and aren't supported.
 
 ## Credits
 
