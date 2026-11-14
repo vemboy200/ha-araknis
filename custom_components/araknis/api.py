@@ -62,6 +62,9 @@ _DELIVERING = (2, 6)
 # Same scaling the switch's web page uses for the raw voltage reading.
 _VOLTAGE_SCALE = 64.45 / 1000
 
+# Rows per dyn_mac request. The switch answers a plain dyn_mac with 50 rows.
+_MAC_TABLE_PAGE_SIZE = 50
+
 _TIMEOUT = aiohttp.ClientTimeout(total=20)
 
 
@@ -98,6 +101,12 @@ class PoePort:
     link_up: bool
     link_speed: int | None
     """Mbit/s, None while the link is down."""
+    connected_mac: str | None
+    """MAC address of the device plugged into the port, from the switch's MAC table.
+
+    None when the switch sees no device on the port, or several (an uplink to
+    another switch or an access point).
+    """
 
 
 @dataclass(frozen=True, slots=True)
@@ -130,6 +139,25 @@ class SwitchInfo:
     serial_number: str
     name: str
     """Name set on the switch's System settings page."""
+
+
+def _connected_macs(rows: list[dict[str, Any]]) -> dict[int, str]:
+    """Return the MAC of the one device on each port that has one.
+
+    A device can add locally administered MACs next to its own, like a NAS
+    with a virtual machine on a bridged network, so those only count when a
+    port has nothing else.
+    """
+    by_port: dict[int, set[str]] = {}
+    for row in rows:
+        by_port.setdefault(row["po"], set()).add(row["ma"].lower())
+    connected: dict[int, str] = {}
+    for port, macs in by_port.items():
+        universal = {mac for mac in macs if not int(mac[:2], 16) & 0x02}
+        candidates = universal or macs
+        if len(candidates) == 1:
+            connected[port] = candidates.pop()
+    return connected
 
 
 def _temperature(summary: dict[str, Any]) -> float | None:
@@ -252,13 +280,28 @@ class AraknisSwitchClient:
                 return reply
         raise AraknisConnectionError("The switch keeps ending the session")
 
+    async def _get_mac_table(self) -> list[dict[str, Any]]:
+        """Read the switch's MAC address table, page by page as its web page does."""
+        rows: list[dict[str, Any]] = []
+        index = 0
+        while True:
+            reply = await self._call("GET", f"dyn_mac={index}-{_MAC_TABLE_PAGE_SIZE}")
+            table = reply["dyn_mac"]
+            rows.extend(table["mac"])
+            # The web page stops at -1. Also stop if the switch points back,
+            # so a bad reply can't keep the poll going forever.
+            if table["next"] == -1 or table["next"] <= index:
+                return rows
+            index = table["next"]
+
     async def get_data(self) -> SwitchData:
-        """Read PoE, link and PoE budget data."""
+        """Read PoE, link, PoE budget and MAC table data."""
         poe_reply = await self._call("GET", "poe_port")
         cfg_reply = await self._call("GET", "port_cfg")
         global_reply = await self._call("GET", "poe_global")
         summary_reply = await self._call("GET", "sys_summary")
         try:
+            connected = _connected_macs(await self._get_mac_table())
             poe_rows = poe_reply["poe_port"]["port"]
             cfg_rows = {row["po"]: row for row in cfg_reply["port_cfg"]["port"]}
             poe_global = global_reply["poe_global"]
@@ -281,6 +324,7 @@ class AraknisSwitchClient:
                     current=row["amp"] if live else 0,
                     link_up=link_up,
                     link_speed=cfg.get("sp") if link_up else None,
+                    connected_mac=connected.get(number) if link_up else None,
                 )
             data = SwitchData(
                 mac=mac,

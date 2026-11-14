@@ -111,6 +111,16 @@ async def test_entity_states(hass: HomeAssistant) -> None:
         "sensor.araknis_switch_192_0_2_10_port_1_poe_power": "0.0",
         "sensor.araknis_switch_192_0_2_10_port_1_poe_status": "detecting",
         "sensor.araknis_switch_192_0_2_10_port_21_link_speed": "unknown",
+        # Port 6 has one device, port 2 one plus a locally administered MAC.
+        "sensor.araknis_switch_192_0_2_10_port_6_connected_device_mac": (
+            "00:11:22:00:00:60"
+        ),
+        "sensor.araknis_switch_192_0_2_10_port_2_connected_device_mac": (
+            "00:11:22:00:00:20"
+        ),
+        # Port 1 is an uplink with several devices; port 21's link is down.
+        "sensor.araknis_switch_192_0_2_10_port_1_connected_device_mac": "unknown",
+        "sensor.araknis_switch_192_0_2_10_port_21_connected_device_mac": "unknown",
         "sensor.araknis_switch_192_0_2_10_poe_power": "21.8",
         "sensor.araknis_switch_192_0_2_10_poe_budget": "190",
     }
@@ -199,8 +209,9 @@ async def test_session_expired_logs_in_again(
     aioclient_mock.get(re.compile(r"/conf/key$"), text=public_key_pem)
     aioclient_mock.post(endpoint("login"), json={"result": 0})
     aioclient_mock.get(endpoint("poe_port"), side_effect=poe_port)
-    for name in ("port_cfg", "poe_global", "const_info", "sys_summary", "sys_info"):
-        aioclient_mock.get(endpoint(name), json=switch_data[name])
+    for name, reply in switch_data.items():
+        if name != "poe_port":
+            aioclient_mock.get(endpoint(name), json=reply)
     mock_config_entry.add_to_hass(hass)
     await hass.config_entries.async_setup(mock_config_entry.entry_id)
     assert mock_config_entry.state is ConfigEntryState.LOADED
@@ -258,6 +269,7 @@ async def test_port_child_devices(
         "button.araknis_switch_192_0_2_10_port_6_poe_power_cycle",
         "sensor.araknis_switch_192_0_2_10_port_6_poe_power",
         "sensor.araknis_switch_192_0_2_10_port_6_poe_voltage",
+        "sensor.araknis_switch_192_0_2_10_port_6_connected_device_mac",
         "sensor.araknis_switch_192_0_2_10_port_6_poe_current",
         "sensor.araknis_switch_192_0_2_10_port_6_poe_status",
         "sensor.araknis_switch_192_0_2_10_port_6_link_speed",

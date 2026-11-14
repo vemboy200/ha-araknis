@@ -111,6 +111,12 @@ PORT_SENSORS: tuple[AraknisPortSensorDescription, ...] = (
         native_unit_of_measurement=UnitOfDataRate.MEGABITS_PER_SECOND,
         value_fn=lambda port: port.link_speed,
     ),
+    AraknisPortSensorDescription(
+        key="connected_mac",
+        translation_key="connected_mac",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=lambda port: port.connected_mac,
+    ),
 )
 
 SWITCH_SENSORS: tuple[AraknisSwitchSensorDescription, ...] = (

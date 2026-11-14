@@ -88,6 +88,9 @@ def switch_data(
             "sys_info",
         )
     }
+    # The MAC table comes in pages, requested as dyn_mac=<start>-<count>.
+    data["dyn_mac=0-50"] = load_json_object_fixture("dyn_mac_0.json", DOMAIN)
+    data["dyn_mac=50-50"] = load_json_object_fixture("dyn_mac_50.json", DOMAIN)
     if not has_temperature_sensor:
         # As the 8-port reports it: no lm63, tmp or loctmp at all.
         for key in ("lm63", "tmp", "loctmp"):

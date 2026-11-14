@@ -15,6 +15,9 @@
       }
     },
     "sensor": {
+      "connected_mac": {
+        "default": "mdi:lan-connect"
+      },
       "cpu_usage": {
         "default": "mdi:cpu-64-bit"
       },

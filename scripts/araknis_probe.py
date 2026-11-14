@@ -82,6 +82,20 @@ def probe(host: str, user: str, pw: str) -> None:
             except ValueError:
                 out[ep] = {"_raw_text": resp.text[:2000]}
             print(f"{host}: {ep} result={out[ep].get('result')}")
+        # The MAC table comes in pages, the way the switch's web page reads it.
+        pages, index = [], 0
+        while len(pages) < 100:
+            resp = s.get(f"{base}/cgi-bin/datajson.cgi?dyn_mac={index}-50", timeout=20)
+            page = json.loads(resp.text)
+            pages.append(page)
+            nxt = page.get("dyn_mac", {}).get("next", -1)
+            print(
+                f"{host}: dyn_mac={index}-50 rows={len(page.get('dyn_mac', {}).get('mac', []))} next={nxt}"
+            )
+            if nxt == -1 or nxt <= index:
+                break
+            index = nxt
+        out["dyn_mac_pages"] = pages
     finally:
         s.get(f"{base}/cgi-bin/datajson.cgi?logout", timeout=5)
         print(f"{host}: logged out")

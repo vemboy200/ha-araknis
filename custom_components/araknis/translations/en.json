@@ -63,6 +63,9 @@
       }
     },
     "sensor": {
+      "connected_mac": {
+        "name": "Connected device MAC"
+      },
       "cpu_usage": {
         "name": "CPU usage"
       },

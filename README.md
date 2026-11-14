@@ -14,7 +14,7 @@ One device per switch, with:
   - a **PoE** switch to turn power on or off
   - a **PoE power cycle** button
   - **PoE power** (W), plus **PoE voltage** (V) and **PoE current** (mA), which are disabled by default
-  - **PoE status** (disabled, detecting, delivering, fault…) and **link speed** as diagnostic sensors
+  - **PoE status** (disabled, detecting, delivering, fault…), **link speed** and **connected device MAC** as diagnostic sensors. The MAC address comes from the switch's MAC address table and belongs to the device plugged into the port, not the port itself. It's unknown when the port has no link or carries several devices, such as an uplink to another switch or an access point.
 
 One device per router, with:
 
