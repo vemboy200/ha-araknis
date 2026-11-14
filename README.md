@@ -106,6 +106,25 @@ Home Assistant finds PoE switches (over SSDP) and routers (over mDNS) on its own
 
 Nothing is changed on the switches or router when you remove the integration.
 
+## Data updates
+
+The integration polls each device every 30 seconds over its local web interface, asking for the same data the device's own web pages load. Nothing is pushed from the devices, and nothing goes through the cloud. Each switch or router has its own poll, so they don't wait on each other.
+
+What one poll reads:
+
+| Device | Requests per poll | What they cover |
+|---|---|---|
+| PoE switch | 4, plus 1 or more for the MAC address table (50 entries per request) | PoE state and power per port, port links, PoE budget, temperature and uptime, connected device MACs |
+| Router | 5 | CPU, memory, uptime and cloud connection, WAN status, client counts, WAN traffic counters, port forwarding rules |
+| AN-110 web-smart switch | 2 | System information (uptime, OvrC connection) and the OvrC setting |
+
+- The integration stays logged in between polls and only logs in again when the device ends the session, so a normal poll doesn't send the password. AN-110 switches are the exception: they have no sessions, so every request carries the login.
+- Some details are read only once, when the integration starts: model, firmware, serial number, switch port names and the router's DHCP pool size. Reload the integration after changing any of them on the device.
+- After you change something from Home Assistant, it doesn't wait for the next poll. Turning PoE on or off, power cycling a port or changing the OvrC setting starts a poll right away (several changes within 10 seconds are combined into one). Turning a port forwarding rule on or off reads the rules back from the router as part of the change, so the switch shows the router's saved state straight away.
+- Changes made elsewhere, like on the device's web page or through OvrC, show up at the next poll, so within 30 seconds.
+- If a poll fails, the device's entities become unavailable until a poll works again.
+- The 30 seconds can't be changed in the integration. To poll less often, turn off **Enable polling for changes** in the entry's **System options** and run the `homeassistant.update_entity` action on one of the device's entities from an automation with the interval you want. Polling the router less often also lowers its CPU load (see below).
+
 ## How it works and caveats
 
 - Araknis publishes no API for these switches. The integration uses the same JSON interface the switch's own web page uses (an RSA-encrypted login, then `/cgi-bin/datajson.cgi`). A firmware update could change it.
@@ -117,7 +136,7 @@ Nothing is changed on the switches or router when you remove the integration.
 - SFP ports and link aggregation groups have no PoE and get no entities.
 - Routers use a different login: the password is encrypted with a key built into the router's login page, and the session is a cookie. **Five failed logins lock the router's login for 30 minutes**, so double-check the password.
 - The router's **CPU usage** is a snapshot, not an average: the router reports a whole number that jumps around from one poll to the next, and on an idle router it often reads 0. For a steadier line, put a [Statistics helper](https://www.home-assistant.io/integrations/statistics/) on it, for example a 5-minute mean.
-- Polling takes a noticeable share of the router's CPU. Each poll makes the same kind of requests the router's own web pages make (five per poll), and loading those pages has been seen to push CPU usage up to about 20%. The integration polls every 30 seconds, so some of the higher CPU readings are likely the integration's own polls.
+- Polling takes a noticeable share of the router's CPU. Each poll makes the same kind of requests the router's own web pages make (see **Data updates**), and loading those pages has been seen to push CPU usage up to about 20%, so some of the higher CPU readings are likely the integration's own polls.
 - AN-110 web-smart switches ask for their login in a browser pop-up (HTTP Basic authentication), which sends it unencrypted with every request. The same goes for their own web page.
 - There are no device trackers for the router's clients. The router lists every client with an "online" flag, but on a real AN-310-RT-4L2W that flag said offline for many Wi-Fi devices that were connected and working, such as phones, ESPHome devices and kitchen appliances. Trackers built on it would show those devices as away, so they were left out. The router has no other list of connected devices: which Wi-Fi devices are connected is known by the access points, not the router.
 
