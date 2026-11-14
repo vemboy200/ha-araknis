@@ -1,7 +1,7 @@
 [project]
 name = "ha-araknis"
 version = "0.1.0"
-description = "Home Assistant custom integration for Araknis PoE switches"
+description = "Home Assistant custom integration for Araknis Networks switches and routers"
 requires-python = ">=3.14"
 
 [tool.pytest.ini_options]
