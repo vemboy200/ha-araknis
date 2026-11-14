@@ -1,22 +1,22 @@
 {
   "config": {
     "abort": {
-      "already_configured": "[%key:common::config_flow::abort::already_configured_device%]",
-      "reauth_successful": "[%key:common::config_flow::abort::reauth_successful%]",
+      "already_configured": "Device is already configured",
+      "reauth_successful": "Re-authentication was successful",
       "wrong_device": "These details belong to a different device than the one being reauthenticated."
     },
     "error": {
-      "cannot_connect": "[%key:common::config_flow::error::cannot_connect%]",
-      "invalid_auth": "[%key:common::config_flow::error::invalid_auth%]",
+      "cannot_connect": "Failed to connect",
+      "invalid_auth": "Invalid authentication",
       "not_supported": "This address doesn't look like a supported Araknis switch or router.",
-      "unknown": "[%key:common::config_flow::error::unknown%]"
+      "unknown": "Unexpected error"
     },
     "flow_title": "{name}",
     "step": {
       "discovery_confirm": {
         "data": {
-          "password": "[%key:common::config_flow::data::password%]",
-          "username": "[%key:common::config_flow::data::username%]"
+          "password": "Password",
+          "username": "Username"
         },
         "data_description": {
           "password": "The password for the device's web interface.",
@@ -26,21 +26,21 @@
       },
       "reauth_confirm": {
         "data": {
-          "password": "[%key:common::config_flow::data::password%]",
-          "username": "[%key:common::config_flow::data::username%]"
+          "password": "Password",
+          "username": "Username"
         },
         "data_description": {
           "password": "The password for the device's web interface.",
           "username": "The username for the device's web interface."
         },
         "description": "The device at {host} rejected the login. Repeated failed logins can lock the account, so Home Assistant waits 5 minutes after each rejected attempt.",
-        "title": "[%key:common::config_flow::title::reauth%]"
+        "title": "Authentication expired for {name}"
       },
       "user": {
         "data": {
-          "host": "[%key:common::config_flow::data::host%]",
-          "password": "[%key:common::config_flow::data::password%]",
-          "username": "[%key:common::config_flow::data::username%]"
+          "host": "Host",
+          "password": "Password",
+          "username": "Username"
         },
         "data_description": {
           "host": "The IP address or hostname of the switch or router.",
@@ -93,9 +93,10 @@
       "poe_status": {
         "name": "PoE status",
         "state": {
+          "applying": "Applying",
           "delivering": "Delivering",
           "detecting": "Detecting",
-          "disabled": "[%key:common::state::disabled%]",
+          "disabled": "Disabled",
           "fault": "Fault",
           "other_fault": "Other fault",
           "requesting": "Requesting",
