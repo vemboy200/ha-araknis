@@ -813,6 +813,10 @@ class AraknisWebSmartClient:
             {"ovrc_state": "1" if enabled else "0", "cmd": "OvrC Setting"},
         )
 
+    async def restart(self) -> None:
+        """Restart the switch, as the Reboot button on its Restart Device page does."""
+        await self._request("POST", "reboot.cgi", {"cmd": "reboot"})
+
     async def logout(self) -> None:
         """Do nothing: Basic authentication has no session to end."""
 

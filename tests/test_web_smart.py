@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from homeassistant.components.button import DOMAIN as BUTTON_DOMAIN, SERVICE_PRESS
 from homeassistant.components.switch import (
     DOMAIN as SWITCH_DOMAIN,
     SERVICE_TURN_OFF,
@@ -136,3 +137,21 @@ async def test_rejected_login_is_not_retried_right_away(hass: HomeAssistant) -> 
 def test_parse_uptime(text: str, seconds: int) -> None:
     """Test uptime parsing. Only the "N days HH:MM:SS" form has been seen."""
     assert _parse_uptime(text) == seconds
+
+
+@pytest.mark.usefixtures("init_web_smart")
+async def test_restart(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+) -> None:
+    """Test the restart button posts what the switch's Reboot button posts."""
+    await hass.services.async_call(
+        BUTTON_DOMAIN,
+        SERVICE_PRESS,
+        {ATTR_ENTITY_ID: entity_id_of(hass, "button", "restart")},
+        blocking=True,
+    )
+    assert [
+        data
+        for method, url, data, _ in aioclient_mock.mock_calls
+        if method == "POST" and str(url).endswith("reboot.cgi")
+    ] == [{"cmd": "reboot"}]

@@ -28,7 +28,12 @@ from .entity import device_info
 PLATFORMS: dict[str, list[Platform]] = {
     DEVICE_TYPE_SWITCH: [Platform.BUTTON, Platform.SENSOR, Platform.SWITCH],
     DEVICE_TYPE_ROUTER: [Platform.BINARY_SENSOR, Platform.BUTTON, Platform.SENSOR],
-    DEVICE_TYPE_WEB_SMART: [Platform.BINARY_SENSOR, Platform.SENSOR, Platform.SWITCH],
+    DEVICE_TYPE_WEB_SMART: [
+        Platform.BINARY_SENSOR,
+        Platform.BUTTON,
+        Platform.SENSOR,
+        Platform.SWITCH,
+    ],
 }
 
 

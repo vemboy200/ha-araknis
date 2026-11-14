@@ -267,6 +267,8 @@ def mock_web_smart(
     aioclient_mock.post(
         web_smart_page("webovrc"), text=load_fixture("web_smart_webovrc.html", DOMAIN)
     )
+    # What the switch answers a reboot with hasn't been seen.
+    aioclient_mock.post(web_smart_page("reboot"), text="")
     return aioclient_mock
 
 

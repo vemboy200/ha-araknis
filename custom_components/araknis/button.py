@@ -11,8 +11,8 @@ from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from .api import AraknisError
 from .const import DOMAIN
 from .coordinator import (
+    AnyAraknisCoordinator,
     AraknisConfigEntry,
-    AraknisRouterCoordinator,
     AraknisSwitchCoordinator,
 )
 from .entity import AraknisEntity, AraknisPortEntity
@@ -36,17 +36,13 @@ async def async_setup_entry(
     async_add_entities(buttons)
 
 
-class AraknisRestartButton(
-    AraknisEntity[AraknisSwitchCoordinator | AraknisRouterCoordinator], ButtonEntity
-):
+class AraknisRestartButton(AraknisEntity[AnyAraknisCoordinator], ButtonEntity):
     """Restarts the switch or router."""
 
     _attr_device_class = ButtonDeviceClass.RESTART
     _attr_entity_category = EntityCategory.CONFIG
 
-    def __init__(
-        self, coordinator: AraknisSwitchCoordinator | AraknisRouterCoordinator
-    ) -> None:
+    def __init__(self, coordinator: AnyAraknisCoordinator) -> None:
         """Initialize the button."""
         super().__init__(coordinator, "restart")
 

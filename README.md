@@ -3,7 +3,7 @@
 A custom integration for Araknis Networks equipment. It monitors and controls PoE on Araknis 210-series managed switches, monitors Araknis 310-series routers, and covers the little that AN-110 web-smart switches offer, over their local web interfaces.
 
 > [!WARNING]
-> Early work in progress, tested on AN-210-SW-8/16/24-POE switches and an AN-310-RT-4L2W router: reading data and turning PoE off and on work. Power cycling is accepted by the switch but has only been tried on an empty port, so its effect on a powered device hasn't been seen yet. The switch and router **Restart** buttons send the same request as the devices' own web pages, but haven't been tried on real hardware.
+> Early work in progress, tested on AN-210-SW-8/16/24-POE switches and an AN-310-RT-4L2W router: reading data and turning PoE off and on work. Power cycling is accepted by the switch but has only been tried on an empty port, so its effect on a powered device hasn't been seen yet. The **Restart** buttons (switches, AN-110 and router) send the same request as the devices' own web pages, but haven't been tried on real hardware.
 
 ## What you get
 
@@ -27,6 +27,7 @@ One device per router, with:
 One device per AN-110 web-smart switch, with:
 
 - **Last restart** and **Cloud connection** (OvrC) as diagnostic sensors
+- A **Restart** button
 - An **OvrC cloud service** switch, the same setting as the switch's OvrC Setting page. Turning it off drops the OvrC connection within a poll; turning it back on reconnects in about a minute.
 
 That's all its web interface has: it has no PoE, port status or MAC address table.
