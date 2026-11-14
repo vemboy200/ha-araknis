@@ -1,16 +1,21 @@
-"""PoE power cycle buttons for Araknis switch ports."""
+"""Restart buttons for Araknis switches, routers and switch ports."""
 
 from __future__ import annotations
 
 from homeassistant.components.button import ButtonDeviceClass, ButtonEntity
+from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from .api import AraknisError
 from .const import DOMAIN
-from .coordinator import AraknisConfigEntry, AraknisSwitchCoordinator
-from .entity import AraknisPortEntity
+from .coordinator import (
+    AraknisConfigEntry,
+    AraknisRouterCoordinator,
+    AraknisSwitchCoordinator,
+)
+from .entity import AraknisEntity, AraknisPortEntity
 
 PARALLEL_UPDATES = 1
 
@@ -20,12 +25,41 @@ async def async_setup_entry(
     entry: AraknisConfigEntry,
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
-    """Set up power cycle buttons."""
+    """Set up restart and power cycle buttons."""
     coordinator = entry.runtime_data
-    assert isinstance(coordinator, AraknisSwitchCoordinator)
-    async_add_entities(
-        AraknisPowerCycleButton(coordinator, port) for port in coordinator.data.ports
-    )
+    buttons: list[ButtonEntity] = [AraknisRestartButton(coordinator)]
+    if isinstance(coordinator, AraknisSwitchCoordinator):
+        buttons.extend(
+            AraknisPowerCycleButton(coordinator, port)
+            for port in coordinator.data.ports
+        )
+    async_add_entities(buttons)
+
+
+class AraknisRestartButton(
+    AraknisEntity[AraknisSwitchCoordinator | AraknisRouterCoordinator], ButtonEntity
+):
+    """Restarts the switch or router."""
+
+    _attr_device_class = ButtonDeviceClass.RESTART
+    _attr_entity_category = EntityCategory.CONFIG
+
+    def __init__(
+        self, coordinator: AraknisSwitchCoordinator | AraknisRouterCoordinator
+    ) -> None:
+        """Initialize the button."""
+        super().__init__(coordinator, "restart")
+
+    async def async_press(self) -> None:
+        """Restart the device."""
+        try:
+            await self.coordinator.client.restart()
+        except AraknisError as err:
+            raise HomeAssistantError(
+                translation_domain=DOMAIN,
+                translation_key="command_failed",
+                translation_placeholders={"error": str(err)},
+            ) from err
 
 
 class AraknisPowerCycleButton(AraknisPortEntity, ButtonEntity):

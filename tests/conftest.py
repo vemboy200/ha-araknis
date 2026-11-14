@@ -61,6 +61,12 @@ def login_result() -> int:
 
 
 @pytest.fixture
+def restart_result() -> int:
+    """The result code the switch answers a restart with."""
+    return 0
+
+
+@pytest.fixture
 def poe_off_ports() -> tuple[int, ...]:
     """Ports the mocked switch reports with PoE turned off."""
     return ()
@@ -106,6 +112,7 @@ def mock_switch(
     aioclient_mock: AiohttpClientMocker,
     public_key_pem: str,
     login_result: int,
+    restart_result: int,
     switch_data: dict[str, dict[str, Any]],
 ) -> AiohttpClientMocker:
     """Mock a switch's web API."""
@@ -114,6 +121,7 @@ def mock_switch(
     for name, reply in switch_data.items():
         aioclient_mock.get(endpoint(name), json=reply)
     aioclient_mock.post(endpoint("poe_port_setting"), json={"result": 0})
+    aioclient_mock.post(endpoint("restart"), json={"result": restart_result})
     aioclient_mock.get(endpoint("logout"), json={"result": 0})
     return aioclient_mock
 
@@ -190,6 +198,8 @@ def mock_router(
     aioclient_mock.post(router_cgi("login"), json=router_login_reply)
     for name, reply in router_data.items():
         aioclient_mock.get(router_cgi(name), json=reply)
+    # The router's web page ignores what this answers, so its reply is unknown.
+    aioclient_mock.post(router_cgi("system_restart"), text="")
     return aioclient_mock
 
 

@@ -310,3 +310,34 @@ async def test_temperature_and_last_restart(hass: HomeAssistant) -> None:
 async def test_no_temperature_sensor(hass: HomeAssistant) -> None:
     """Test switches without a temperature sensor get no temperature entity."""
     assert hass.states.get("sensor.araknis_switch_192_0_2_10_temperature") is None
+
+
+@pytest.mark.usefixtures("init_integration")
+async def test_restart(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+) -> None:
+    """Test the restart button sends what the switch's Restart Device page sends."""
+    await hass.services.async_call(
+        BUTTON_DOMAIN,
+        SERVICE_PRESS,
+        {ATTR_ENTITY_ID: "button.araknis_switch_192_0_2_10_restart"},
+        blocking=True,
+    )
+    assert [
+        data
+        for method, url, data, _ in aioclient_mock.mock_calls
+        if method == "POST" and str(url).endswith("?restart")
+    ] == ["op=0"]
+
+
+@pytest.mark.usefixtures("init_integration")
+@pytest.mark.parametrize("restart_result", [1])
+async def test_restart_refused(hass: HomeAssistant) -> None:
+    """Test a restart the switch refuses raises an error."""
+    with pytest.raises(HomeAssistantError):
+        await hass.services.async_call(
+            BUTTON_DOMAIN,
+            SERVICE_PRESS,
+            {ATTR_ENTITY_ID: "button.araknis_switch_192_0_2_10_restart"},
+            blocking=True,
+        )

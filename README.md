@@ -3,13 +3,14 @@
 A custom integration for Araknis Networks equipment. It monitors and controls PoE on Araknis 210-series managed switches, and monitors Araknis 310-series routers, over their local web interfaces.
 
 > [!WARNING]
-> Early work in progress, tested on AN-210-SW-8/16/24-POE switches and an AN-310-RT-4L2W router: reading data and turning PoE off and on work. Power cycling is accepted by the switch but has only been tried on an empty port, so its effect on a powered device hasn't been seen yet.
+> Early work in progress, tested on AN-210-SW-8/16/24-POE switches and an AN-310-RT-4L2W router: reading data and turning PoE off and on work. Power cycling is accepted by the switch but has only been tried on an empty port, so its effect on a powered device hasn't been seen yet. The switch and router **Restart** buttons send the same request as the devices' own web pages, but haven't been tried on real hardware.
 
 ## What you get
 
 One device per switch, with:
 
 - **PoE power** and **PoE budget** for the whole switch
+- A **Restart** button
 - For each PoE port:
   - a **PoE** switch to turn power on or off
   - a **PoE power cycle** button
@@ -20,6 +21,7 @@ One device per router, with:
 
 - **CPU usage**, **memory usage**, **DHCP clients** and **last restart**
 - **Cloud connection** (OvrC) as a diagnostic sensor
+- A **Restart** button
 - One child device per WAN port, with a **connected** sensor, **link speed** and the WAN **IP address** (disabled by default)
 
 Switches and routers are polled every 30 seconds.
@@ -99,6 +101,7 @@ Nothing is changed on the switches or router when you remove the integration.
 - The switch ties a login session to the client's IP address.
 - Repeated failed logins can lock the switch account. After a rejected login the integration waits 5 minutes before trying again, and asks you to re-enter the login.
 - Turning PoE off or power cycling a port cuts power to whatever is plugged into it (access points, cameras, network coordinators…).
+- Restarting a switch cuts off everything connected through it until it's back up (whether PoE power stays on during the restart hasn't been tested). Restarting the router cuts off the internet for the whole network. The integration's entities are unavailable until the device answers again.
 - Port names are read when the integration is set up. Reload the integration after renaming a port on the switch.
 - SFP ports and link aggregation groups have no PoE and get no entities.
 - Routers use a different login: the password is encrypted with a key built into the router's login page, and the session is a cookie. **Five failed logins lock the router's login for 30 minutes**, so double-check the password.

@@ -6,8 +6,15 @@ from datetime import timedelta
 from typing import Any
 
 from freezegun.api import FrozenDateTimeFactory
+from homeassistant.components.button import DOMAIN as BUTTON_DOMAIN, SERVICE_PRESS
 from homeassistant.config_entries import ConfigEntryState
-from homeassistant.const import STATE_OFF, STATE_ON, STATE_UNAVAILABLE, STATE_UNKNOWN
+from homeassistant.const import (
+    ATTR_ENTITY_ID,
+    STATE_OFF,
+    STATE_ON,
+    STATE_UNAVAILABLE,
+    STATE_UNKNOWN,
+)
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr, entity_registry as er
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
@@ -222,3 +229,22 @@ async def test_wan_speed_parsing() -> None:
     assert _wan_speed("100Mbps") == 100
     assert _wan_speed("2Gbps") == 2500
     assert _wan_speed("N/C") is None
+
+
+@pytest.mark.usefixtures("init_router")
+async def test_restart(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+) -> None:
+    """Test the restart button sends what the router's web page sends."""
+    entity_id = er.async_get(hass).async_get_entity_id(
+        "button", DOMAIN, f"{ROUTER_MAC}_restart"
+    )
+    assert entity_id is not None
+    await hass.services.async_call(
+        BUTTON_DOMAIN, SERVICE_PRESS, {ATTR_ENTITY_ID: entity_id}, blocking=True
+    )
+    assert [
+        (data, headers)
+        for method, url, data, headers in aioclient_mock.mock_calls
+        if method == "POST" and str(url).endswith("system_restart.cgi")
+    ] == [({"reboot_status": "1"}, {"Cookie": "login_ID=session-1"})]

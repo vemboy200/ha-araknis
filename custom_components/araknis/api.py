@@ -381,6 +381,12 @@ class AraknisSwitchClient:
         """Briefly cut PoE power to a port and turn it back on."""
         await self._set_port(port, cycle=1)
 
+    async def restart(self) -> None:
+        """Restart the switch, as its Restart Device page does."""
+        await self._call("POST", "restart", "op=0")
+        # The restart ends the session.
+        self._logged_in = False
+
     async def logout(self) -> None:
         """End the session on the switch."""
         if not self._logged_in:
@@ -592,19 +598,31 @@ class AraknisRouterClient:
             f"The router rejected the login ({reply.get('remain')} attempts left)"
         )
 
-    async def _get(self, endpoint: str) -> dict[str, Any]:
-        """Read a CGI, logging in first or again when needed."""
+    async def _send(
+        self, method: str, endpoint: str, data: dict[str, str] | None = None
+    ) -> str:
+        """Call a CGI, logging in first or again when needed."""
         async with self._lock:
             for _ in range(2):
                 if self._login_id is None:
                     await self._login()
-                text = await self._request("GET", f"/cgi-bin/{endpoint}.cgi")
+                text = await self._request(method, f"/cgi-bin/{endpoint}.cgi", data)
                 if text is None:
                     # The session expired.
                     self._login_id = None
                     continue
-                return self._parse(text, endpoint)
+                return text
         raise AraknisConnectionError("The router keeps ending the session")
+
+    async def _get(self, endpoint: str) -> dict[str, Any]:
+        """Read a CGI."""
+        return self._parse(await self._send("GET", endpoint), endpoint)
+
+    async def restart(self) -> None:
+        """Restart the router, as the restart button on its web page does."""
+        await self._send("POST", "system_restart", {"reboot_status": "1"})
+        # The restart ends the session.
+        self._login_id = None
 
     async def get_info(self) -> RouterInfo:
         """Read the model, firmware, service tag and name."""
