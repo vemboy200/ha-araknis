@@ -53,7 +53,10 @@ class AraknisWanConnectedSensor(AraknisWanEntity, BinarySensorEntity):
     """Whether a WAN port has a link and an IP address."""
 
     _attr_device_class = BinarySensorDeviceClass.CONNECTIVITY
+    # The WAN port's main entity, named after its device. The translation key
+    # only gives it an icon.
     _attr_name = None
+    _attr_translation_key = "wan_connection"
 
     def __init__(self, coordinator: AraknisRouterCoordinator, interface: str) -> None:
         """Initialize the binary sensor."""

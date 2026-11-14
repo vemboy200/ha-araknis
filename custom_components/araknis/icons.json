@@ -1,0 +1,49 @@
+{
+  "entity": {
+    "binary_sensor": {
+      "cloud_connection": {
+        "default": "mdi:cloud-check-outline",
+        "state": {
+          "off": "mdi:cloud-off-outline"
+        }
+      },
+      "wan_connection": {
+        "default": "mdi:wan",
+        "state": {
+          "off": "mdi:close-network-outline"
+        }
+      }
+    },
+    "sensor": {
+      "cpu_usage": {
+        "default": "mdi:cpu-64-bit"
+      },
+      "dhcp_clients": {
+        "default": "mdi:devices"
+      },
+      "ip_address": {
+        "default": "mdi:ip-network"
+      },
+      "last_restart": {
+        "default": "mdi:restart"
+      },
+      "link_speed": {
+        "default": "mdi:speedometer"
+      },
+      "memory_usage": {
+        "default": "mdi:memory"
+      },
+      "poe_status": {
+        "default": "mdi:power-plug-outline"
+      }
+    },
+    "switch": {
+      "poe": {
+        "default": "mdi:ethernet",
+        "state": {
+          "off": "mdi:ethernet-off"
+        }
+      }
+    }
+  }
+}

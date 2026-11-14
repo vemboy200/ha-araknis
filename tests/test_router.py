@@ -87,6 +87,10 @@ async def test_router_entities(hass: HomeAssistant) -> None:
 async def test_wan_entities(hass: HomeAssistant) -> None:
     """Test each WAN port's entities: WAN1 is connected, WAN2 is not."""
     assert state_of(hass, "binary_sensor", "wan1_connected") == STATE_ON
+    # The connection sensor is the WAN device's main entity.
+    wan1 = hass.states.get("binary_sensor.an_310_rt_4l2w_wan1")
+    assert wan1 is not None
+    assert wan1.name == "WAN1"
     assert state_of(hass, "sensor", "wan1_link_speed") == "1000"
     assert state_of(hass, "binary_sensor", "wan2_connected") == STATE_OFF
     assert state_of(hass, "sensor", "wan2_link_speed") == STATE_UNKNOWN
