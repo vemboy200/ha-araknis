@@ -1,11 +1,7 @@
 MIT License
 
 Copyright (c) 2026 vemboy200
-
-The switch's web API was worked out by Louis Apostolakis in
-https://github.com/lovintexas/Araknis_Switch (MIT License, Copyright (c) 2026
-Louis Apostolakis). This integration's client is a new implementation based on
-that work.
+Copyright (c) 2026 Louis Apostolakis
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

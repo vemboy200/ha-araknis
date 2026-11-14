@@ -1,6 +1,9 @@
 {
   "domain": "araknis",
   "name": "Araknis Networks",
+  "categories": [
+    "computers_network.routers_network"
+  ],
   "codeowners": [
     "@vemboy200"
   ],
