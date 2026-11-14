@@ -88,7 +88,7 @@ Requires Home Assistant 2026.11 or newer.
 
 1. In Home Assistant, go to **Settings** > **Marketplace** and select **Add from link**.
 2. Enter `vemboy200/ha-araknis` and add it.
-3. Install **Araknis Networks** and restart Home Assistant.
+3. Install **Araknis Networks**. A first install works without restarting Home Assistant. After an update, restart Home Assistant to load the new version.
 
 ### Manual installation
 
