@@ -1,0 +1,61 @@
+{
+  "poe_port": {
+    "port": [
+      {
+        "po": 1,
+        "en": 1,
+        "pr": 0,
+        "cl": 1,
+        "st": 1,
+        "err": 0,
+        "vol": 0,
+        "amp": 0,
+        "tem": 0,
+        "ppw": 0,
+        "pdc": 0
+      },
+      {
+        "po": 2,
+        "en": 1,
+        "pr": 0,
+        "cl": 1,
+        "st": 2,
+        "err": 0,
+        "vol": 835,
+        "amp": 19,
+        "tem": 195,
+        "ppw": 10,
+        "pdc": 0
+      },
+      {
+        "po": 6,
+        "en": 1,
+        "pr": 0,
+        "cl": 1,
+        "st": 2,
+        "err": 0,
+        "vol": 835,
+        "amp": 87,
+        "tem": 195,
+        "ppw": 46,
+        "pdc": 4
+      },
+      {
+        "po": 21,
+        "en": 1,
+        "pr": 0,
+        "cl": 1,
+        "st": 1,
+        "err": 0,
+        "vol": 0,
+        "amp": 0,
+        "tem": 0,
+        "ppw": 0,
+        "pdc": 0
+      }
+    ]
+  },
+  "result": 0,
+  "msg": "",
+  "mac_address": "AA:BB:CC:DD:EE:FF"
+}

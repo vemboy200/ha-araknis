@@ -1,0 +1,40 @@
+{
+  "WANs": [
+    {
+      "interface": "WAN1",
+      "wan_index": "0",
+      "is_hidden": "0",
+      "name": "WAN1",
+      "IP_address": "203.0.113.20",
+      "subnet_mask": "255.255.255.0",
+      "default_gateway": "203.0.113.1",
+      "connection_type": "DHCP",
+      "use_static_dns": "1",
+      "DNS1": "198.51.100.1",
+      "DNS2": "198.51.100.2",
+      "static_DNS1": "8.8.8.8",
+      "static_DNS2": "1.1.1.1",
+      "duplex": "Full",
+      "speed": "Auto",
+      "current_speed": "1Gbps"
+    },
+    {
+      "interface": "WAN2",
+      "wan_index": "1",
+      "is_hidden": "0",
+      "name": "WAN2",
+      "IP_address": "0.0.0.0",
+      "subnet_mask": "0.0.0.0",
+      "default_gateway": "0.0.0.0",
+      "connection_type": "DHCP",
+      "use_static_dns": "0",
+      "DNS1": "0.0.0.0",
+      "DNS2": "0.0.0.0",
+      "static_DNS1": "0.0.0.0",
+      "static_DNS2": "0.0.0.0",
+      "duplex": "Full",
+      "speed": "Auto",
+      "current_speed": "N/C"
+    }
+  ]
+}

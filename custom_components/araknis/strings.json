@@ -1,0 +1,133 @@
+{
+  "config": {
+    "abort": {
+      "already_configured": "[%key:common::config_flow::abort::already_configured_device%]",
+      "reauth_successful": "[%key:common::config_flow::abort::reauth_successful%]",
+      "wrong_device": "These details belong to a different device than the one being reauthenticated."
+    },
+    "error": {
+      "cannot_connect": "[%key:common::config_flow::error::cannot_connect%]",
+      "invalid_auth": "[%key:common::config_flow::error::invalid_auth%]",
+      "not_supported": "This address doesn't look like a supported Araknis switch or router.",
+      "unknown": "[%key:common::config_flow::error::unknown%]"
+    },
+    "flow_title": "{name}",
+    "step": {
+      "discovery_confirm": {
+        "data": {
+          "password": "[%key:common::config_flow::data::password%]",
+          "username": "[%key:common::config_flow::data::username%]"
+        },
+        "data_description": {
+          "password": "The password for the device's web interface.",
+          "username": "The username for the device's web interface."
+        },
+        "description": "An Araknis switch was found at {host}. Enter its login to add it."
+      },
+      "reauth_confirm": {
+        "data": {
+          "password": "[%key:common::config_flow::data::password%]",
+          "username": "[%key:common::config_flow::data::username%]"
+        },
+        "data_description": {
+          "password": "The password for the device's web interface.",
+          "username": "The username for the device's web interface."
+        },
+        "description": "The device at {host} rejected the login. Repeated failed logins can lock the account, so Home Assistant waits 5 minutes after each rejected attempt.",
+        "title": "[%key:common::config_flow::title::reauth%]"
+      },
+      "user": {
+        "data": {
+          "host": "[%key:common::config_flow::data::host%]",
+          "password": "[%key:common::config_flow::data::password%]",
+          "username": "[%key:common::config_flow::data::username%]"
+        },
+        "data_description": {
+          "host": "The IP address or hostname of the switch or router.",
+          "password": "The password for the device's web interface.",
+          "username": "The username for the device's web interface."
+        },
+        "description": "Set up an Araknis 210 or 310-series PoE switch, or a 310-series router. Routers lock their login for 30 minutes after 5 failed attempts."
+      }
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "cloud_connection": {
+        "name": "Cloud connection"
+      }
+    },
+    "button": {
+      "power_cycle": {
+        "name": "PoE power cycle"
+      }
+    },
+    "sensor": {
+      "cpu_usage": {
+        "name": "CPU usage"
+      },
+      "dhcp_clients": {
+        "name": "DHCP clients"
+      },
+      "ip_address": {
+        "name": "IP address"
+      },
+      "last_restart": {
+        "name": "Last restart"
+      },
+      "link_speed": {
+        "name": "Link speed"
+      },
+      "memory_usage": {
+        "name": "Memory usage"
+      },
+      "poe_budget": {
+        "name": "PoE budget"
+      },
+      "poe_power_total": {
+        "name": "PoE power"
+      },
+      "poe_status": {
+        "name": "PoE status",
+        "state": {
+          "delivering": "Delivering",
+          "detecting": "Detecting",
+          "disabled": "[%key:common::state::disabled%]",
+          "fault": "Fault",
+          "other_fault": "Other fault",
+          "requesting": "Requesting",
+          "test_mode": "Test mode",
+          "unknown": "Unknown"
+        }
+      },
+      "port_current": {
+        "name": "PoE current"
+      },
+      "port_power": {
+        "name": "PoE power"
+      },
+      "port_voltage": {
+        "name": "PoE voltage"
+      }
+    },
+    "switch": {
+      "poe": {
+        "name": "PoE"
+      }
+    }
+  },
+  "exceptions": {
+    "command_failed": {
+      "message": "The switch did not accept the command: {error}"
+    },
+    "invalid_auth": {
+      "message": "The device rejected the username or password."
+    },
+    "poe_off": {
+      "message": "PoE is off on {port}, so there is nothing to power cycle."
+    },
+    "update_failed": {
+      "message": "Error reading the device: {error}"
+    }
+  }
+}

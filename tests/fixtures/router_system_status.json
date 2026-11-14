@@ -1,0 +1,10 @@
+{
+  "LanMAC": "AA:BB:CC:DD:EE:01",
+  "Wan1MAC": "AA:BB:CC:DD:EE:02",
+  "Wan2MAC": "AA:BB:CC:DD:EE:03",
+  "name": "AN-310-RT-4L2W",
+  "model": "AN-310-RT-4L2W",
+  "service_tag": "ST00000000000TEST",
+  "firmware": "1.5.16",
+  "date": "Nov. 14 2024 09:03:50"
+}

@@ -1,0 +1,8 @@
+__pycache__/
+.venv*/
+.pytest_cache/
+.ruff_cache/
+.coverage
+araknis_probe_*.json
+.env
+router_probe_*.json
