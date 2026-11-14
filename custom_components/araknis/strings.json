@@ -138,12 +138,15 @@
       },
       "poe": {
         "name": "PoE"
+      },
+      "port_forward": {
+        "name": "Port forward {name}"
       }
     }
   },
   "exceptions": {
     "command_failed": {
-      "message": "The switch did not accept the command: {error}"
+      "message": "The device did not accept the command: {error}"
     },
     "invalid_auth": {
       "message": "The device rejected the username or password."

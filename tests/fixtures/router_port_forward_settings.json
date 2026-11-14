@@ -1,0 +1,33 @@
+{
+  "WANs": [
+    {"index": "0", "interface": "WAN1", "ip_addr": "203.0.113.10"},
+    {"index": "1", "interface": "WAN2", "ip_addr": "0.0.0.0"}
+  ],
+  "max_rules": "200",
+  "forwardRule": [
+    {
+      "applyMethod": "edit",
+      "token_index": "1",
+      "rule_enable": "1",
+      "rule_protocol": "BOTH",
+      "rule_external_port": "80",
+      "rule_external_ip": "0",
+      "rule_internal_port": "80",
+      "rule_internal_ip": "192.168.1.250",
+      "rule_desc": "DVR80"
+    },
+    {
+      "applyMethod": "edit",
+      "token_index": "2",
+      "rule_enable": "0",
+      "rule_protocol": "TCP",
+      "rule_external_port": "8000-8010",
+      "rule_external_ip": "0",
+      "rule_internal_port": "8000-8010",
+      "rule_internal_ip": "192.168.1.251",
+      "rule_desc": ""
+    }
+  ],
+  "portTriggerEnable": "0",
+  "portTrigger": []
+}

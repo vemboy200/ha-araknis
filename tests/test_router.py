@@ -3,20 +3,25 @@
 from __future__ import annotations
 
 from datetime import timedelta
+import json
 import re
 from typing import Any
 
 from freezegun.api import FrozenDateTimeFactory
 from homeassistant.components.button import DOMAIN as BUTTON_DOMAIN, SERVICE_PRESS
+from homeassistant.components.switch import DOMAIN as SWITCH_DOMAIN
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.const import (
     ATTR_ENTITY_ID,
+    SERVICE_TURN_OFF,
+    SERVICE_TURN_ON,
     STATE_OFF,
     STATE_ON,
     STATE_UNAVAILABLE,
     STATE_UNKNOWN,
 )
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import device_registry as dr, entity_registry as er
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 import pytest
@@ -282,3 +287,109 @@ def test_data_size_parsing() -> None:
     assert _data_size("512.0 MB") == 0.512
     assert _data_size("1.2 TB") == 1200.0
     assert _data_size("-") is None
+
+
+def switch_id(hass: HomeAssistant, key: str) -> str:
+    """Return the entity ID of the port forwarding switch with this rule key."""
+    entity_id = er.async_get(hass).async_get_entity_id(
+        "switch", DOMAIN, f"{ROUTER_MAC}_port_forward_{key}"
+    )
+    assert entity_id is not None, key
+    return entity_id
+
+
+@pytest.mark.usefixtures("init_router")
+async def test_port_forward_switches(hass: HomeAssistant) -> None:
+    """Test each port forwarding rule gets a switch named after its description."""
+    state = hass.states.get(switch_id(hass, "both_wan0_80"))
+    assert state is not None
+    assert state.state == STATE_ON
+    assert state.name == "AN-310-RT-4L2W Port forward DVR80"
+    assert state.attributes["internal_ip"] == "192.168.1.250"
+    assert state.attributes["external_port"] == "80"
+    # A rule without a description is named after its protocol and port.
+    state = hass.states.get(switch_id(hass, "tcp_wan0_8000-8010"))
+    assert state is not None
+    assert state.state == STATE_OFF
+    assert state.name == "AN-310-RT-4L2W Port forward TCP 8000-8010"
+
+
+@pytest.mark.usefixtures("init_router")
+async def test_port_forward_toggle(
+    hass: HomeAssistant,
+    aioclient_mock: AiohttpClientMocker,
+    router_data: dict[str, dict[str, Any]],
+) -> None:
+    """Test a toggle posts the whole list back with only that rule changed."""
+    original = json.loads(json.dumps(router_data["port_forward_settings"]))
+    entity_id = switch_id(hass, "both_wan0_80")
+    await hass.services.async_call(
+        SWITCH_DOMAIN, SERVICE_TURN_OFF, {ATTR_ENTITY_ID: entity_id}, blocking=True
+    )
+    posts = [
+        (data, headers)
+        for method, url, data, headers in aioclient_mock.mock_calls
+        if method == "POST" and str(url).endswith("port_forward_settings.cgi")
+    ]
+    assert len(posts) == 1
+    data, headers = posts[0]
+    assert headers["Content-Type"] == "application/x-www-form-urlencoded"
+    expected_rules = json.loads(json.dumps(original["forwardRule"]))
+    expected_rules[0]["rule_enable"] = "0"
+    assert json.loads(data) == {
+        "forwardRule": expected_rules,
+        "portTriggerEnable": "0",
+        "portTrigger": [],
+    }
+    assert hass.states.get(entity_id).state == STATE_OFF
+
+    await hass.services.async_call(
+        SWITCH_DOMAIN, SERVICE_TURN_ON, {ATTR_ENTITY_ID: entity_id}, blocking=True
+    )
+    assert hass.states.get(entity_id).state == STATE_ON
+    assert (
+        router_data["port_forward_settings"]["forwardRule"] == original["forwardRule"]
+    )
+
+
+@pytest.mark.usefixtures("init_router")
+async def test_port_forward_not_saved(
+    hass: HomeAssistant,
+    aioclient_mock: AiohttpClientMocker,
+    router_data: dict[str, dict[str, Any]],
+) -> None:
+    """Test an error is raised when the router doesn't keep the change."""
+    aioclient_mock.clear_requests()
+    aioclient_mock.post(router_cgi("login"), json={"login_status": 1, "login_ID": "s"})
+    aioclient_mock.get(
+        router_cgi("port_forward_settings"), json=router_data["port_forward_settings"]
+    )
+    aioclient_mock.post(router_cgi("port_forward_settings"), text="")
+    with pytest.raises(HomeAssistantError, match="don't match what was sent"):
+        await hass.services.async_call(
+            SWITCH_DOMAIN,
+            SERVICE_TURN_OFF,
+            {ATTR_ENTITY_ID: switch_id(hass, "both_wan0_80")},
+            blocking=True,
+        )
+
+
+async def test_new_port_forward_rule_is_added(
+    hass: HomeAssistant,
+    init_router: MockConfigEntry,
+    router_data: dict[str, dict[str, Any]],
+    freezer: FrozenDateTimeFactory,
+) -> None:
+    """Test a rule created on the router shows up at the next poll."""
+    rules = router_data["port_forward_settings"]["forwardRule"]
+    rules.append({**rules[0], "rule_external_port": "443", "rule_desc": "DVR443"})
+    freezer.tick(SCAN_INTERVAL)
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done()
+    assert hass.states.get(switch_id(hass, "both_wan0_443")).state == STATE_ON
+    # A rule deleted on the router leaves its switch unavailable.
+    del rules[0]
+    freezer.tick(SCAN_INTERVAL)
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done()
+    assert hass.states.get(switch_id(hass, "both_wan0_80")).state == STATE_UNAVAILABLE

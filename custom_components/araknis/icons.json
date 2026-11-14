@@ -70,6 +70,9 @@
         "state": {
           "off": "mdi:ethernet-off"
         }
+      },
+      "port_forward": {
+        "default": "mdi:router-network"
       }
     }
   }

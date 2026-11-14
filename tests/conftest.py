@@ -9,6 +9,7 @@ address replaced.
 from __future__ import annotations
 
 from collections.abc import Generator
+import json
 import re
 from typing import Any
 from unittest.mock import patch
@@ -23,7 +24,11 @@ from pytest_homeassistant.common import (
     load_fixture,
     load_json_object_fixture,
 )
-from pytest_homeassistant.test_util.aiohttp import AiohttpClientMocker
+from pytest_homeassistant.test_util.aiohttp import (
+    AiohttpClientMocker,
+    AiohttpClientMockResponse,
+)
+from yarl import URL
 
 from custom_components.araknis.const import CONF_DEVICE_TYPE, DOMAIN
 
@@ -189,6 +194,7 @@ def router_data() -> dict[str, dict[str, Any]]:
             "wan_status_cards",
             "client_count",
             "dhcp_status",
+            "port_forward_settings",
         )
     }
 
@@ -207,7 +213,29 @@ def mock_router(
     aioclient_mock.get(re.compile(r"/login\.html$"), text=ROUTER_LOGIN_PAGE)
     aioclient_mock.post(router_cgi("login"), json=router_login_reply)
     for name, reply in router_data.items():
-        aioclient_mock.get(router_cgi(name), json=reply)
+        if name != "port_forward_settings":
+            aioclient_mock.get(router_cgi(name), json=reply)
+
+    # Port forwarding keeps what was last posted, like the router does.
+    async def read_port_forwards(
+        method: str, url: URL, data: Any
+    ) -> AiohttpClientMockResponse:
+        return AiohttpClientMockResponse(
+            method, url, json=router_data["port_forward_settings"]
+        )
+
+    async def save_port_forwards(
+        method: str, url: URL, data: Any
+    ) -> AiohttpClientMockResponse:
+        router_data["port_forward_settings"].update(json.loads(data))
+        return AiohttpClientMockResponse(method, url, text="")
+
+    aioclient_mock.get(
+        router_cgi("port_forward_settings"), side_effect=read_port_forwards
+    )
+    aioclient_mock.post(
+        router_cgi("port_forward_settings"), side_effect=save_port_forwards
+    )
     # The Ports page's request; the parameter is part of the URL.
     aioclient_mock.get(
         re.compile(r"/cgi-bin/port_status_table\.cgi\?info=port_status_table$"),

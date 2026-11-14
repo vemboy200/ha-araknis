@@ -27,7 +27,7 @@ from __future__ import annotations
 import asyncio
 import base64
 import contextlib
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 import ipaddress
 import json
 import re
@@ -454,6 +454,51 @@ class RouterData:
     total_clients: int
     """Every client the router knows of, DHCP and static, including ones that left."""
     wans: dict[str, RouterWan]
+    port_forwards: dict[str, PortForward]
+    """Port forwarding rules by key."""
+
+
+@dataclass(frozen=True, slots=True)
+class PortForward:
+    """One port forwarding rule."""
+
+    key: str
+    """Protocol, WAN and external port, which the router keeps unique."""
+    description: str
+    enabled: bool
+    protocol: str
+    """TCP, UDP or BOTH."""
+    external_port: str
+    """A port or a range like "100-200"."""
+    internal_ip: str
+    internal_port: str
+
+
+def _port_forward_key(rule: dict[str, Any]) -> str:
+    """Identify a rule the way the router's page checks for conflicts.
+
+    The router's token_index is only the rule's position in the list, so it
+    changes when an earlier rule is deleted.
+    """
+    return "_".join(
+        (
+            str(rule["rule_protocol"]).lower(),
+            f"wan{rule['rule_external_ip']}",
+            str(rule["rule_external_port"]),
+        )
+    )
+
+
+def _parse_port_forward(rule: dict[str, Any]) -> PortForward:
+    return PortForward(
+        key=_port_forward_key(rule),
+        description=str(rule.get("rule_desc") or ""),
+        enabled=str(rule["rule_enable"]) == "1",
+        protocol=str(rule["rule_protocol"]),
+        external_port=str(rule["rule_external_port"]),
+        internal_ip=str(rule["rule_internal_ip"]),
+        internal_port=str(rule["rule_internal_port"]),
+    )
 
 
 @dataclass(frozen=True, slots=True)
@@ -563,15 +608,19 @@ class AraknisRouterClient:
         return {"Cookie": f"login_ID={self._login_id}"}
 
     async def _request(
-        self, method: str, path: str, data: dict[str, str] | None = None
+        self, method: str, path: str, data: dict[str, str] | str | None = None
     ) -> str | None:
         """Send a request. Return the body, or None if the router redirected to its login page."""
+        headers = self._headers() or {}
+        if isinstance(data, str):
+            # The settings pages post JSON text with a form content type.
+            headers["Content-Type"] = "application/x-www-form-urlencoded"
         try:
             async with self._session.request(
                 method,
                 f"{self._base}{path}",
                 data=data,
-                headers=self._headers(),
+                headers=headers or None,
                 allow_redirects=False,
                 timeout=_TIMEOUT,
             ) as resp:
@@ -650,7 +699,7 @@ class AraknisRouterClient:
         self,
         method: str,
         endpoint: str,
-        data: dict[str, str] | None = None,
+        data: dict[str, str] | str | None = None,
         query: str = "",
     ) -> str:
         """Call a CGI, logging in first or again when needed."""
@@ -677,6 +726,59 @@ class AraknisRouterClient:
         await self._send("POST", "system_restart", {"reboot_status": "1"})
         # The restart ends the session.
         self._login_id = None
+
+    async def set_port_forward(self, key: str, enabled: bool) -> dict[str, PortForward]:
+        """Turn one port forwarding rule on or off and return the rules.
+
+        The router only takes the whole list, so this posts back what it just
+        read with one rule changed, as its Port Forwarding page does, then reads
+        the list again to check the change was saved and nothing else was.
+        """
+        settings = await self._get("port_forward_settings")
+        try:
+            rules = settings["forwardRule"]
+            before = [_parse_port_forward(rule) for rule in rules]
+            rule = next(r for r in rules if _port_forward_key(r) == key)
+        except StopIteration as err:
+            raise AraknisConnectionError(
+                f"The router has no port forwarding rule {key}"
+            ) from err
+        except (KeyError, TypeError) as err:
+            raise AraknisConnectionError(
+                f"Router sent its port forwarding rules in an unexpected format: {err!r}"
+            ) from err
+        rule["rule_enable"] = "1" if enabled else "0"
+        await self._send(
+            "POST",
+            "port_forward_settings",
+            json.dumps(
+                {
+                    "forwardRule": rules,
+                    "portTriggerEnable": settings.get("portTriggerEnable", "0"),
+                    "portTrigger": settings.get("portTrigger", []),
+                }
+            ),
+        )
+        after = await self.get_port_forwards()
+        expected = {
+            r.key: replace(r, enabled=enabled) if r.key == key else r for r in before
+        }
+        if after != expected:
+            raise AraknisConnectionError(
+                "The router's port forwarding rules don't match what was sent"
+            )
+        return after
+
+    async def get_port_forwards(self) -> dict[str, PortForward]:
+        """Read the port forwarding rules."""
+        settings = await self._get("port_forward_settings")
+        try:
+            rules = [_parse_port_forward(rule) for rule in settings["forwardRule"]]
+        except (KeyError, TypeError) as err:
+            raise AraknisConnectionError(
+                f"Router sent its port forwarding rules in an unexpected format: {err!r}"
+            ) from err
+        return {rule.key: rule for rule in rules}
 
     async def get_info(self) -> RouterInfo:
         """Read the model, firmware, service tag and name."""
@@ -709,6 +811,7 @@ class AraknisRouterClient:
             ),
             "port_status_table",
         )
+        port_forwards = await self.get_port_forwards()
         try:
             counters = {row["interface"]: row for row in ports.get("WANs", [])}
             # Same formula as the router's web page.
@@ -728,6 +831,7 @@ class AraknisRouterClient:
                 static_clients=int(clients["static"]),
                 total_clients=int(clients["DHCP"]["client_table_count"]),
                 wans={wan.interface: wan for wan in wans},
+                port_forwards=port_forwards,
             )
         except (KeyError, TypeError, ValueError, ZeroDivisionError) as err:
             raise AraknisConnectionError(
