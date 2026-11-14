@@ -48,6 +48,7 @@ RESULT_LOCKED_OUT = 9
 LOGIN_BACKOFF = 300
 
 # PoE port status codes, as named by the switch's web page.
+# Status codes as the switch's web page names them (status2str in its scripts).
 POE_STATUS = {
     0: "disabled",
     1: "detecting",
@@ -56,6 +57,8 @@ POE_STATUS = {
     4: "fault",
     5: "other_fault",
     6: "requesting",
+    # Shown briefly while the switch applies a PoE setting change.
+    7: "applying",
 }
 _DELIVERING = (2, 6)
 

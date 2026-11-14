@@ -93,6 +93,7 @@
       "poe_status": {
         "name": "PoE status",
         "state": {
+          "applying": "Applying",
           "delivering": "Delivering",
           "detecting": "Detecting",
           "disabled": "[%key:common::state::disabled%]",
