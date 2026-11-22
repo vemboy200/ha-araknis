@@ -84,6 +84,10 @@ class AraknisAuthError(AraknisError):
     """The device rejected the username or password, or the account is locked."""
 
 
+class _RouterFumbleError(AraknisConnectionError):
+    """The router answered a CGI with HTTP 5xx or a reply that isn't JSON."""
+
+
 class AraknisUnsupportedDeviceError(AraknisConnectionError):
     """The address answers, but not like a supported Araknis switch or router."""
 
@@ -408,6 +412,8 @@ _ROUTER_LOGIN_LOCKED_OUT = 3
 _ROUTER_LOGIN_UPGRADING = 4
 
 _REDIRECTS = (301, 302, 303, 307, 308)
+# How long to wait before reading a router CGI a second time.
+_ROUTER_RETRY_DELAY = 1
 
 _NO_ADDRESS = "0.0.0.0"
 
@@ -626,6 +632,10 @@ class AraknisRouterClient:
             ) as resp:
                 if resp.status in _REDIRECTS:
                     return None
+                if resp.status >= 500:
+                    raise _RouterFumbleError(
+                        f"Router answered {path} with HTTP {resp.status}"
+                    )
                 resp.raise_for_status()
                 return await resp.text()
         except (aiohttp.ClientError, TimeoutError) as err:
@@ -640,9 +650,7 @@ class AraknisRouterClient:
         try:
             reply = json.loads(text)
         except ValueError as err:
-            raise AraknisConnectionError(
-                f"Router sent invalid JSON for {what}"
-            ) from err
+            raise _RouterFumbleError(f"Router sent invalid JSON for {what}") from err
         if not isinstance(reply, dict):
             raise AraknisConnectionError(f"Router sent unexpected data for {what}")
         return reply
@@ -717,9 +725,18 @@ class AraknisRouterClient:
                 return text
         raise AraknisConnectionError("The router keeps ending the session")
 
-    async def _get(self, endpoint: str) -> dict[str, Any]:
-        """Read a CGI."""
-        return self._parse(await self._send("GET", endpoint), endpoint)
+    async def _get(self, endpoint: str, query: str = "") -> dict[str, Any]:
+        """Read a CGI, trying a second time if the router fumbles the first.
+
+        Its CGIs sometimes answer with HTTP 500 or a reply that isn't JSON
+        when another client reads them at the same moment, as seen with two
+        Home Assistant instances polling one router.
+        """
+        try:
+            return self._parse(await self._send("GET", endpoint, query=query), endpoint)
+        except _RouterFumbleError:
+            await asyncio.sleep(_ROUTER_RETRY_DELAY)
+        return self._parse(await self._send("GET", endpoint, query=query), endpoint)
 
     async def restart(self) -> None:
         """Restart the router, as the restart button on its web page does."""
@@ -805,12 +822,7 @@ class AraknisRouterClient:
         wan_reply = await self._get("wan_status_cards")
         clients = await self._get("client_count")
         # What the Ports page asks for; without the parameter the reply is empty.
-        ports = self._parse(
-            await self._send(
-                "GET", "port_status_table", query="?info=port_status_table"
-            ),
-            "port_status_table",
-        )
+        ports = await self._get("port_status_table", "?info=port_status_table")
         port_forwards = await self.get_port_forwards()
         try:
             counters = {row["interface"]: row for row in ports.get("WANs", [])}
