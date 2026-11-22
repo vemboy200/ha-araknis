@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from datetime import timedelta
 import json
 import re
@@ -395,33 +396,38 @@ async def test_new_port_forward_rule_is_added(
     assert hass.states.get(switch_id(hass, "both_wan0_80")).state == STATE_UNAVAILABLE
 
 
-def mock_router_with(
+@pytest.fixture
+def fumbling_router(
     aioclient_mock: AiohttpClientMocker,
     router_login_reply: dict[str, Any],
     router_data: dict[str, dict[str, Any]],
-    name: str,
-    replies: list[tuple[int, str]],
-) -> None:
-    """Mock the router, with one read CGI answering each of these in turn."""
-    answers = iter(replies)
-
-    async def answer(method: str, url: URL, data: Any) -> AiohttpClientMockResponse:
-        status, text = next(answers)
-        return AiohttpClientMockResponse(method, url, status=status, text=text)
-
-    aioclient_mock.post(router_cgi("login"), json=router_login_reply)
+    monkeypatch: pytest.MonkeyPatch,
+) -> Callable[[str, list[tuple[int, str]]], None]:
+    """Mock the router with one read CGI that fumbles, then answers properly."""
+    monkeypatch.setattr("custom_components.araknis.api._ROUTER_RETRY_DELAY", 0)
     ports = load_json_object_fixture("router_port_status_table.json", DOMAIN)
     cgis = {**router_data, "port_status_table": ports}
-    for cgi, reply in cgis.items():
-        pattern = (
-            re.compile(r"/cgi-bin/port_status_table\.cgi\?info=port_status_table$")
-            if cgi == "port_status_table"
-            else router_cgi(cgi)
-        )
-        if cgi == name:
-            aioclient_mock.get(pattern, side_effect=answer)
-        else:
-            aioclient_mock.get(pattern, json=reply)
+
+    def setup(name: str, bad_replies: list[tuple[int, str]]) -> None:
+        answers = iter([*bad_replies, (200, json.dumps(cgis[name]))])
+
+        async def answer(method: str, url: URL, data: Any) -> AiohttpClientMockResponse:
+            status, text = next(answers)
+            return AiohttpClientMockResponse(method, url, status=status, text=text)
+
+        aioclient_mock.post(router_cgi("login"), json=router_login_reply)
+        for cgi, reply in cgis.items():
+            pattern = (
+                re.compile(r"/cgi-bin/port_status_table\.cgi\?info=port_status_table$")
+                if cgi == "port_status_table"
+                else router_cgi(cgi)
+            )
+            if cgi == name:
+                aioclient_mock.get(pattern, side_effect=answer)
+            else:
+                aioclient_mock.get(pattern, json=reply)
+
+    return setup
 
 
 def calls_to(aioclient_mock: AiohttpClientMocker, name: str) -> int:
@@ -443,26 +449,12 @@ def calls_to(aioclient_mock: AiohttpClientMocker, name: str) -> int:
 async def test_fumbled_read_is_tried_again(
     hass: HomeAssistant,
     aioclient_mock: AiohttpClientMocker,
-    router_login_reply: dict[str, Any],
-    router_data: dict[str, dict[str, Any]],
-    monkeypatch: pytest.MonkeyPatch,
+    fumbling_router: Callable[[str, list[tuple[int, str]]], None],
     name: str,
     first_reply: tuple[int, str],
 ) -> None:
     """Test a read the router fumbles once succeeds on the second try."""
-    monkeypatch.setattr("custom_components.araknis.api._ROUTER_RETRY_DELAY", 0)
-    good = json.dumps(
-        load_json_object_fixture("router_port_status_table.json", DOMAIN)
-        if name == "port_status_table"
-        else router_data[name]
-    )
-    mock_router_with(
-        aioclient_mock,
-        router_login_reply,
-        router_data,
-        name,
-        [first_reply, (200, good)],
-    )
+    fumbling_router(name, [first_reply])
     client = AraknisRouterClient(async_get_clientsession(hass), HOST, "admin", "pw")
     data = await client.get_data()
     assert data.port_forwards
@@ -472,19 +464,10 @@ async def test_fumbled_read_is_tried_again(
 async def test_read_fumbled_twice_fails(
     hass: HomeAssistant,
     aioclient_mock: AiohttpClientMocker,
-    router_login_reply: dict[str, Any],
-    router_data: dict[str, dict[str, Any]],
-    monkeypatch: pytest.MonkeyPatch,
+    fumbling_router: Callable[[str, list[tuple[int, str]]], None],
 ) -> None:
     """Test the client gives up after the second fumbled read."""
-    monkeypatch.setattr("custom_components.araknis.api._ROUTER_RETRY_DELAY", 0)
-    mock_router_with(
-        aioclient_mock,
-        router_login_reply,
-        router_data,
-        "port_status_table",
-        [(500, "Internal Server Error")] * 3,
-    )
+    fumbling_router("port_status_table", [(500, "Internal Server Error")] * 2)
     client = AraknisRouterClient(async_get_clientsession(hass), HOST, "admin", "pw")
     with pytest.raises(AraknisConnectionError, match="HTTP 500"):
         await client.get_data()
