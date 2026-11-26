@@ -106,6 +106,20 @@ async def test_router_entities(hass: HomeAssistant) -> None:
     assert state_of(hass, "sensor", "last_restart") != STATE_UNKNOWN
 
 
+async def test_dhcp_pool_size_follows_range_changes(
+    hass: HomeAssistant,
+    init_router: MockConfigEntry,
+    router_data: dict[str, dict[str, Any]],
+    freezer: FrozenDateTimeFactory,
+) -> None:
+    """Test a wider DHCP range shows up on the next poll, without a reload."""
+    router_data["dhcp_status"]["DHCP"][0]["ip_range_min"] = "192.168.1.50"
+    freezer.tick(SCAN_INTERVAL + timedelta(seconds=1))
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done()
+    assert state_of(hass, "sensor", "dhcp_pool_size") == "150"
+
+
 @pytest.mark.usefixtures("init_router")
 async def test_wan_entities(hass: HomeAssistant) -> None:
     """Test each WAN port's entities: WAN1 is connected, WAN2 is not."""

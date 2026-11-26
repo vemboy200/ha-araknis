@@ -21,7 +21,7 @@ One device per router, with:
 
 - **CPU usage**, **memory usage**, **DHCP clients** and **last restart**
 - **Static IP clients** (devices with an address set on the device rather than by DHCP) and **Total clients** (both kinds). These count every client the router knows of, including ones that have left but whose DHCP lease hasn't run out yet, so they're not a count of devices connected right now.
-- **DHCP pool size** as a diagnostic sensor: how many addresses the DHCP ranges hold, reservations included. It's read when the integration starts, so reload it after changing the range.
+- **DHCP pool size** as a diagnostic sensor: how many addresses the DHCP ranges hold, reservations included.
 - **Cloud connection** (OvrC) as a diagnostic sensor
 - A **Restart** button
 - One **Port forward** switch per port forwarding rule (configuration), named after the rule's description, that turns the rule on or off. Its attributes show the protocol, external port, and the internal IP address and port. Rules added on the router's web page show up at the next poll; a deleted rule's switch becomes unavailable. The router only saves the whole list at once, so a toggle sends back the list it just read with one rule changed, then reads it again to check nothing else changed.
@@ -119,7 +119,7 @@ What one poll reads:
 | AN-110 web-smart switch | 2 | System information (uptime, OvrC connection) and the OvrC setting |
 
 - The integration stays logged in between polls and only logs in again when the device ends the session, so a normal poll doesn't send the password. AN-110 switches are the exception: they have no sessions, so every request carries the login.
-- Some details are read only once, when the integration starts: model, firmware, serial number, switch port names and the router's DHCP pool size. Reload the integration after changing any of them on the device.
+- Some details are read only once, when the integration starts: model, firmware, serial number and switch port names. Reload the integration after changing any of them on the device.
 - After you change something from Home Assistant, it doesn't wait for the next poll. Turning PoE on or off, power cycling a port or changing the OvrC setting starts a poll right away (several changes within 10 seconds are combined into one). Turning a port forwarding rule on or off reads the rules back from the router as part of the change, so the switch shows the router's saved state straight away.
 - Changes made elsewhere, like on the device's web page or through OvrC, show up at the next poll, so within 30 seconds.
 - If a poll fails, the device's entities become unavailable until a poll works again.

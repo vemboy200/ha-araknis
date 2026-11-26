@@ -8,7 +8,7 @@ address replaced.
 
 from __future__ import annotations
 
-from collections.abc import Generator
+from collections.abc import Awaitable, Callable, Generator
 import json
 import re
 from typing import Any
@@ -212,17 +212,21 @@ def mock_router(
     )
     aioclient_mock.get(re.compile(r"/login\.html$"), text=ROUTER_LOGIN_PAGE)
     aioclient_mock.post(router_cgi("login"), json=router_login_reply)
-    for name, reply in router_data.items():
+
+    # Each read answers with router_data as it is at that moment, so tests can
+    # change a reply between polls.
+    def read(name: str) -> Callable[..., Awaitable[AiohttpClientMockResponse]]:
+        async def reply(method: str, url: URL, data: Any) -> AiohttpClientMockResponse:
+            return AiohttpClientMockResponse(method, url, json=router_data[name])
+
+        return reply
+
+    for name in router_data:
         if name != "port_forward_settings":
-            aioclient_mock.get(router_cgi(name), json=reply)
+            aioclient_mock.get(router_cgi(name), side_effect=read(name))
 
     # Port forwarding keeps what was last posted, like the router does.
-    async def read_port_forwards(
-        method: str, url: URL, data: Any
-    ) -> AiohttpClientMockResponse:
-        return AiohttpClientMockResponse(
-            method, url, json=router_data["port_forward_settings"]
-        )
+    read_port_forwards = read("port_forward_settings")
 
     async def save_port_forwards(
         method: str, url: URL, data: Any

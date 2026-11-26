@@ -459,6 +459,8 @@ class RouterData:
     """Clients with an address set on the device itself rather than by DHCP."""
     total_clients: int
     """Every client the router knows of, DHCP and static, including ones that left."""
+    dhcp_pool_size: int
+    """Addresses in the DHCP ranges of all VLANs, reservations included."""
     wans: dict[str, RouterWan]
     port_forwards: dict[str, PortForward]
     """Port forwarding rules by key."""
@@ -518,8 +520,6 @@ class RouterInfo:
     serial_number: str
     """The service tag."""
     name: str
-    dhcp_pool_size: int
-    """Addresses in the DHCP ranges of all VLANs, reservations included."""
 
 
 def _dhcp_pool_size(dhcp_status: dict[str, Any]) -> int:
@@ -800,8 +800,6 @@ class AraknisRouterClient:
     async def get_info(self) -> RouterInfo:
         """Read the model, firmware, service tag and name."""
         status = await self._get("system_status")
-        # A big reply that lists every client, so it's read only here.
-        dhcp_status = await self._get("dhcp_status")
         try:
             return RouterInfo(
                 mac=status["LanMAC"],
@@ -809,7 +807,6 @@ class AraknisRouterClient:
                 firmware=status["firmware"],
                 serial_number=status["service_tag"],
                 name=status.get("name") or status["model"],
-                dhcp_pool_size=_dhcp_pool_size(dhcp_status),
             )
         except (KeyError, TypeError, ValueError) as err:
             raise AraknisConnectionError(
@@ -821,6 +818,8 @@ class AraknisRouterClient:
         stat = await self._get("stat")
         wan_reply = await self._get("wan_status_cards")
         clients = await self._get("client_count")
+        # Lists every client too, but the router's dashboard polls it as well.
+        dhcp_status = await self._get("dhcp_status")
         # What the Ports page asks for; without the parameter the reply is empty.
         ports = await self._get("port_status_table", "?info=port_status_table")
         port_forwards = await self.get_port_forwards()
@@ -842,6 +841,7 @@ class AraknisRouterClient:
                 dhcp_clients=int(clients["DHCP"]["used"]),
                 static_clients=int(clients["static"]),
                 total_clients=int(clients["DHCP"]["client_table_count"]),
+                dhcp_pool_size=_dhcp_pool_size(dhcp_status),
                 wans={wan.interface: wan for wan in wans},
                 port_forwards=port_forwards,
             )
