@@ -306,6 +306,15 @@ async def test_temperature_and_last_restart(hass: HomeAssistant) -> None:
 
 
 @pytest.mark.usefixtures("init_integration")
+@pytest.mark.parametrize(("ovrc", "expected"), [(1, STATE_ON), (0, STATE_OFF)])
+async def test_cloud_connection(hass: HomeAssistant, expected: str) -> None:
+    """Test the OvrC connection follows sys_timestatus, as the web page shows it."""
+    state = hass.states.get("binary_sensor.araknis_switch_192_0_2_10_cloud_connection")
+    assert state is not None
+    assert state.state == expected
+
+
+@pytest.mark.usefixtures("init_integration")
 @pytest.mark.parametrize("has_temperature_sensor", [False])
 async def test_no_temperature_sensor(hass: HomeAssistant) -> None:
     """Test switches without a temperature sensor get no temperature entity."""

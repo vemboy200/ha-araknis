@@ -1,4 +1,4 @@
-"""Binary sensors for Araknis routers, web-smart switches and WAN ports."""
+"""Binary sensors for Araknis switches, routers and WAN ports."""
 
 from __future__ import annotations
 
@@ -11,9 +11,9 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from .coordinator import (
+    AnyAraknisCoordinator,
     AraknisConfigEntry,
     AraknisRouterCoordinator,
-    AraknisWebSmartCoordinator,
 )
 from .entity import AraknisEntity, AraknisWanEntity
 
@@ -27,9 +27,6 @@ async def async_setup_entry(
 ) -> None:
     """Set up binary sensors."""
     coordinator = entry.runtime_data
-    assert isinstance(
-        coordinator, AraknisRouterCoordinator | AraknisWebSmartCoordinator
-    )
     entities: list[BinarySensorEntity] = [AraknisCloudSensor(coordinator)]
     if isinstance(coordinator, AraknisRouterCoordinator):
         entities.extend(
@@ -39,19 +36,14 @@ async def async_setup_entry(
     async_add_entities(entities)
 
 
-class AraknisCloudSensor(
-    AraknisEntity[AraknisRouterCoordinator | AraknisWebSmartCoordinator],
-    BinarySensorEntity,
-):
+class AraknisCloudSensor(AraknisEntity[AnyAraknisCoordinator], BinarySensorEntity):
     """Whether the device is connected to the OvrC cloud service."""
 
     _attr_device_class = BinarySensorDeviceClass.CONNECTIVITY
     _attr_entity_category = EntityCategory.DIAGNOSTIC
     _attr_translation_key = "cloud_connection"
 
-    def __init__(
-        self, coordinator: AraknisRouterCoordinator | AraknisWebSmartCoordinator
-    ) -> None:
+    def __init__(self, coordinator: AnyAraknisCoordinator) -> None:
         """Initialize the binary sensor."""
         super().__init__(coordinator, "cloud_connection")
 

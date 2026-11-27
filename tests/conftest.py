@@ -88,8 +88,14 @@ def has_temperature_sensor() -> bool:
 
 
 @pytest.fixture
+def ovrc() -> int:
+    """The switch's OvrC status in sys_timestatus: 1 is connected, 0 is not."""
+    return 1
+
+
+@pytest.fixture
 def switch_data(
-    poe_off_ports: tuple[int, ...], has_temperature_sensor: bool
+    poe_off_ports: tuple[int, ...], has_temperature_sensor: bool, ovrc: int
 ) -> dict[str, dict[str, Any]]:
     """Replies for the read endpoints."""
     data = {
@@ -101,6 +107,7 @@ def switch_data(
             "const_info",
             "sys_summary",
             "sys_info",
+            "sys_timestatus",
         )
     }
     # The MAC table comes in pages, requested as dyn_mac=<start>-<count>.
@@ -110,6 +117,7 @@ def switch_data(
         # As the 8-port reports it: no lm63, tmp or loctmp at all.
         for key in ("lm63", "tmp", "loctmp"):
             del data["sys_summary"]["sys_summary"][key]
+    data["sys_timestatus"]["sys_timestatus"]["ovrc"] = ovrc
     for row in data["poe_port"]["poe_port"]["port"]:
         if row["po"] in poe_off_ports:
             row.update(en=0, st=0)

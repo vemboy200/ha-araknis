@@ -26,7 +26,12 @@ from .coordinator import (
 from .entity import device_info
 
 PLATFORMS: dict[str, list[Platform]] = {
-    DEVICE_TYPE_SWITCH: [Platform.BUTTON, Platform.SENSOR, Platform.SWITCH],
+    DEVICE_TYPE_SWITCH: [
+        Platform.BINARY_SENSOR,
+        Platform.BUTTON,
+        Platform.SENSOR,
+        Platform.SWITCH,
+    ],
     DEVICE_TYPE_ROUTER: [
         Platform.BINARY_SENSOR,
         Platform.BUTTON,

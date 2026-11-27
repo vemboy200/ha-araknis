@@ -10,6 +10,7 @@ A custom integration for Araknis Networks equipment. It monitors and controls Po
 One device per switch, with:
 
 - **PoE power** and **PoE budget** for the whole switch
+- **Cloud connection** (OvrC) as a diagnostic sensor, the same status the switch's web page shows as Cloud Server
 - A **Restart** button
 - For each PoE port:
   - a **PoE** switch to turn power on or off
@@ -114,8 +115,8 @@ What one poll reads:
 
 | Device | Requests per poll | What they cover |
 |---|---|---|
-| PoE switch | 4, plus 1 or more for the MAC address table (50 entries per request) | PoE state and power per port, port links, PoE budget, temperature and uptime, connected device MACs |
-| Router | 5 | CPU, memory, uptime and cloud connection, WAN status, client counts, WAN traffic counters, port forwarding rules |
+| PoE switch | 5, plus 1 or more for the MAC address table (50 entries per request) | PoE state and power per port, port links, PoE budget, temperature, uptime and cloud connection, connected device MACs |
+| Router | 6 | CPU, memory, uptime and cloud connection, WAN status, client counts, DHCP pool size, WAN traffic counters, port forwarding rules |
 | AN-110 web-smart switch | 2 | System information (uptime, OvrC connection) and the OvrC setting |
 
 - The integration stays logged in between polls and only logs in again when the device ends the session, so a normal poll doesn't send the password. AN-110 switches are the exception: they have no sessions, so every request carries the login.

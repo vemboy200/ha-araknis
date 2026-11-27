@@ -135,6 +135,8 @@ class SwitchData:
     """
     uptime: int
     """Seconds since the switch started."""
+    cloud_connected: bool
+    """Connected to the OvrC cloud service."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -308,6 +310,8 @@ class AraknisSwitchClient:
         cfg_reply = await self._call("GET", "port_cfg")
         global_reply = await self._call("GET", "poe_global")
         summary_reply = await self._call("GET", "sys_summary")
+        # What the web page polls for its clock, uptime and "Cloud Server" status.
+        time_reply = await self._call("GET", "sys_timestatus")
         try:
             connected = _connected_macs(await self._get_mac_table())
             poe_rows = poe_reply["poe_port"]["port"]
@@ -341,6 +345,8 @@ class AraknisSwitchClient:
                 power_budget=poe_global["pb"],
                 temperature=_temperature(summary_reply["sys_summary"]),
                 uptime=int(summary_reply["sys_summary"]["up"]),
+                # The web page shows 0 as "No Connection", anything else as "Connected".
+                cloud_connected=time_reply["sys_timestatus"]["ovrc"] != 0,
             )
         except (KeyError, TypeError, ValueError) as err:
             raise AraknisConnectionError(
